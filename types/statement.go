@@ -1,14 +1,20 @@
 package types
 
-import "os"
+import (
+	"os"
+	"fmt"
+)
+
+const ConstWidthTypes = ["float", "int"]
+const VariableWidthTypes = ["char", "varchar"]
 
 type DBState struct {
-	currentDB *os.File
+	CurrentDB *os.File
 }
 
 func NewState() DBState {
 	return DBState{
-		currentDB: nil,
+		CurrentDB: nil,
 	}
 }
 
@@ -17,12 +23,18 @@ type Statement interface {
 }
 
 type CreateStatement struct {
-	tableName string
-	colNames map[string]string
+	TableName string
+	ColumnNames map[string]string
 }
 
 type Comment struct{}
 
-func (statement CreateStatement) Execute(state *DBState){}
+func (statement CreateStatement) Execute(state *DBState){
+	// TODO
+	fmt.Printf("creating table %v with cols %v\n",
+		statement.TableName,
+		statement.ColumnNames,
+	)
+}
 
 func (statement Comment) Execute(state *DBState){}

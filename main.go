@@ -21,12 +21,14 @@ func main(){
 			break
 		}
 
+		fmt.Println(input)
+
 		statement, err := parser.Parse(input)
 
 		if err != nil {
 			fmt.Println(err)
-			break
+		} else {
+			statement.Execute(&dbstate)
 		}
-		statement.Execute(&dbstate)
 	}
 }
