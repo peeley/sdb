@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-const ConstWidthTypes = ["float", "int"]
-const VariableWidthTypes = ["char", "varchar"]
+var ConstWidthTypes = []string{"float", "int"}
+var VariableWidthTypes = []string{"char", "varchar"}
 
 type DBState struct {
 	CurrentDB *os.File
