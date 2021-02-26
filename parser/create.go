@@ -25,7 +25,7 @@ func ParseCreateTableStatement(input string) (types.Statement, error){
 	trimmed = strings.TrimPrefix(trimmed, tableName)
 	trimmed = strings.TrimSpace(trimmed)
 
-	colList, err := parseColumnlList(trimmed)
+	colList, err := parseColumnList(trimmed)
 
 	if err != nil {
 		return nil, err
@@ -56,8 +56,7 @@ func ParseCreateDBStatement(input string) (types.Statement, error) {
 	return createDB, nil
 }
 
-func parseColumnlList(input string) (map[string]string, error) {
-	fmt.Println("parsing column list:", input)
+func parseColumnList(input string) (map[string]types.Type, error) {
 	if len(input) < 1 || input[0] != '(' {
 		return nil, errors.New(
 			"Expected '(' after table name in CREATE statement.",
@@ -65,20 +64,19 @@ func parseColumnlList(input string) (map[string]string, error) {
 	}
 
 	trimmed := strings.TrimPrefix(input, "(")
-	cols := make(map[string]string)
+	cols := make(map[string]types.Type)
 
 	for {
-		fmt.Printf("parsing column: '%v'\n", trimmed)
 		trimmed = strings.TrimSpace(trimmed)
 		ident := ParseIdentifier(trimmed)
 		trimmed = strings.TrimPrefix(trimmed, ident)
 
 		trimmed = strings.TrimSpace(trimmed)
-		typeName, err := ParseTypename(trimmed)
+		typeName, err := ParseType(trimmed)
 		if err != nil {
 			return nil, err
 		}
-		trimmed = strings.TrimPrefix(trimmed, typeName)
+		trimmed = strings.TrimPrefix(trimmed, typeName.ToString())
 
 		cols[ident] = typeName
 		trimmed = strings.TrimSpace(trimmed)
@@ -86,7 +84,7 @@ func parseColumnlList(input string) (map[string]string, error) {
 		if trimmed[0] == ')' {
 			break
 		} else if trimmed[0] != ',' {
-			return nil, errors.New("Expected ',' in columns list.")
+			return nil, fmt.Errorf("Expected ',' at end of column %v.", trimmed)
 		}
 
 		trimmed = strings.TrimPrefix(trimmed, ",")

@@ -5,19 +5,6 @@ import (
 	"fmt"
 )
 
-var ConstWidthTypes = []string{"float", "int"}
-var VariableWidthTypes = []string{"char", "varchar"}
-
-type DBState struct {
-	CurrentDB string
-}
-
-func NewState() DBState {
-	return DBState{
-		CurrentDB: "",
-	}
-}
-
 type Statement interface {
 	Execute(*DBState) error
 }
@@ -36,7 +23,7 @@ type UseDBStatement struct {
 
 type CreateTableStatement struct {
 	TableName string
-	ColumnNames map[string]string
+	ColumnNames map[string]Type
 }
 
 type Comment struct{}
