@@ -1,3 +1,12 @@
+// Noah Snelson
+// February 25, 2021
+// sdb/main.go
+//
+// This file is the main script that is run when a user executes the `sdb`
+// binary. It represents a REPL wherein users can type and SQL query, have the
+// query parsed, and then executed. The command also reads from stdin, so files
+// can be piped/redirected into the REPL.
+
 package main
 
 import (
@@ -8,6 +17,7 @@ import (
 	"sdb/types"
 )
 
+// Main REPL loop, runs until user terminates the loop or EOF is detected.
 func main(){
 	reader := bufio.NewReader(os.Stdin)
 	dbstate := types.NewState()

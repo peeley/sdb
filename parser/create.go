@@ -1,3 +1,9 @@
+// Noah Snelson
+// February 25, 2021
+// sdb/parser/create.go
+//
+// Contains parsing functions for `CREATE TABLE` and `CREATE DATABASE` functions.
+
 package parser
 
 import (
@@ -7,6 +13,7 @@ import (
 	"strings"
 )
 
+// Parses `CREATE TABLE <table_name> (<table_columns>);` input.
 func ParseCreateTableStatement(input string) (types.Statement, error){
 	prefix := "create table"
 	if len(input) < len(prefix) || !strings.HasPrefix(input, prefix) {
@@ -39,6 +46,7 @@ func ParseCreateTableStatement(input string) (types.Statement, error){
 	return &statement, nil
 }
 
+// Parses `CREATE DATABASE <db_name>;` input.
 func ParseCreateDBStatement(input string) (types.Statement, error) {
 	prefix := "create database"
 	if len(input) < len(prefix) || !strings.HasPrefix(input, prefix) {
@@ -56,6 +64,8 @@ func ParseCreateDBStatement(input string) (types.Statement, error) {
 	return createDB, nil
 }
 
+// Private utility function to parse <table_columns> into map of
+// column name -> column type.
 func parseColumnList(input string) (map[string]types.Type, error) {
 	if len(input) < 1 || input[0] != '(' {
 		return nil, errors.New(

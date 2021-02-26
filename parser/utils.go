@@ -1,21 +1,30 @@
+// Noah Snelson
+// February 25, 2021
+// sdb/parser/utils.go
+//
+// Common parsing utilities used across several top-level parsing functions.
+
 package parser
 
 import (
 	"fmt"
 	"sdb/types"
+	"strconv"
 	"strings"
 	"unicode"
-	"strconv"
 )
 
+// Detects if input is comment by checking if it begins with "--"
 func IsComment(input string) bool {
-	return len(input) < 2 || (input[0] == '-' && input[1] == '-')
+	return len(input) < 2 || strings.HasPrefix(input, "--")
 }
 
+// Detects if input is `.EXIT` command
 func IsExitCommand(input string) bool {
 	return strings.HasPrefix(".exit", input)
 }
 
+// Parses identifiers, which is any sequence of letters, numbers, and `_`
 func ParseIdentifier(input string) string {
 	var builder strings.Builder
 
@@ -31,6 +40,8 @@ func ParseIdentifier(input string) string {
 	return builder.String()
 }
 
+// Parses the various types the database supports, like `float`, `int`,
+// `char(X)`, and `varchar(X)`.
 func ParseType(input string) (types.Type, error) {
 	baseType := ParseIdentifier(input)
 

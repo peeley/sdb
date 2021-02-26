@@ -1,3 +1,13 @@
+// Noah Snelson
+// February 25, 2021
+// sdb/parser/parse.go
+//
+// Contains main parsing function. The parser operates as a standard recursive
+// descent parser -> https://en.wikipedia.org/wiki/Recursive_descent_parser
+// Each statement type (`CREATE`, `USE`, `SELECT`) represent a top-level
+// production, with each having its own parsing function in the respective
+// `parser` package file.
+
 package parser
 
 import (
@@ -6,6 +16,8 @@ import (
 	"strings"
 )
 
+// Main parsing function, prompt input/stdin is fed in as a parameter and a
+// types.Statement interface is returned to be executed in sdb/main.go.
 func Parse(input string) (types.Statement, error) {
 	input = strings.TrimSpace(input)
 	input = strings.ToLower(input)
@@ -44,6 +56,14 @@ func Parse(input string) (types.Statement, error) {
 		return nil, err
 	} else if useDB != nil{
 		return useDB, nil
+	}
+
+	selectStatement, err := ParseSelectStatement(input)
+
+	if err != nil {
+		return nil, err
+	} else if selectStatement != nil{
+		return selectStatement, nil
 	}
 
 	createTable, err := ParseCreateTableStatement(input)

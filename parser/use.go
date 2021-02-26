@@ -1,3 +1,9 @@
+// Noah Snelson
+// February 25, 2021
+// sdb/parser/use.go
+//
+// Contains functions for parsing `USE` queries.
+
 package parser
 
 import (
@@ -5,6 +11,7 @@ import (
 	"strings"
 )
 
+// Parses `USE <db_name>;` input.
 func ParseUseDBStatement(input string) (types.Statement, error) {
 	prefix := "use"
 	if len(input) < len(prefix) || !strings.HasPrefix(input, prefix) {
