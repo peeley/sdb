@@ -27,6 +27,10 @@ type CreateTableStatement struct {
 	Columns map[string]Type
 }
 
+type DropTableStatement struct {
+	TableName string
+}
+
 type Comment struct{}
 
 type ExitCommand struct{}
@@ -55,6 +59,30 @@ func (statement DropDBStatement) Execute(state *DBState) error {
 	return nil
 }
 
+func (statement DropTableStatement) Execute(state *DBState) error {
+	var tablePathBuilder strings.Builder
+	tablePathBuilder.WriteString(state.CurrentDB)
+	tablePathBuilder.WriteString("/")
+	tablePathBuilder.WriteString(statement.TableName)
+
+	tablePath := tablePathBuilder.String()
+
+	_, err := os.Stat(tablePath)
+
+	if err != nil {
+		return fmt.Errorf("!Failed to delete %v because it does not exist.", statement.TableName)
+	}
+
+	err = os.Remove(tablePath)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Deleted table %v.\n", statement.TableName)
+	return nil
+}
+
 func (statement UseDBStatement) Execute(state *DBState) error {
 	_, err := os.Stat(statement.DBName)
 
@@ -76,31 +104,22 @@ func (statement CreateTableStatement) Execute(state *DBState) error {
 
 	tablePath := tablePathBuilder.String()
 
-	tableFile, err := os.Create(tablePath)
-	if err != nil {
-		fmt.Println(err)
+	_, err := os.Stat(tablePath)
+
+	if err == nil {
 		return fmt.Errorf("!Failed to create table %v because it already exists.", statement.TableName)
 	}
 
-	var tableTypesStringBuilder strings.Builder
-	idx := 0
-
-	for columnName, columnType := range statement.Columns {
-		columnString := fmt.Sprintf("%v %v", columnName, columnType.ToString())
-
-		if idx < len(statement.Columns) - 1 {
-			columnString = fmt.Sprintf("%v | ", columnString)
-		}
-		idx += 1
-
-		tableTypesStringBuilder.WriteString(columnString)
+	tableFile, err := os.Create(tablePath)
+	if err != nil {
+		return fmt.Errorf("!Failed to create table %v because it already exists.", statement.TableName)
 	}
 
-	tableTypesString := tableTypesStringBuilder.String()
+	tableTypesString := columnsToString(statement.Columns)
 	tableFile.WriteString(tableTypesString)
 	tableFile.WriteString("\n")
 
-	fmt.Printf("Table %v created.\n%v\n", statement.TableName, tableTypesString)
+	fmt.Printf("Table %v created.\n", statement.TableName)
 	return nil
 }
 
@@ -115,4 +134,22 @@ func (statement ExitCommand) Execute(state *DBState) error{
 
 	// unreachable, but necessary for return type
 	return nil
+}
+
+func columnsToString(columns map[string]Type) string {
+	var tableTypesStringBuilder strings.Builder
+	idx := 0
+
+	for columnName, columnType := range columns {
+		columnString := fmt.Sprintf("%v %v", columnName, columnType.ToString())
+
+		if idx < len(columns) - 1 {
+			columnString = fmt.Sprintf("%v, ", columnString)
+		}
+		idx += 1
+
+		tableTypesStringBuilder.WriteString(columnString)
+	}
+
+	return tableTypesStringBuilder.String()
 }

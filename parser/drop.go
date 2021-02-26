@@ -32,8 +32,8 @@ func ParseDropTableStatement(input string) (types.Statement, error) {
 	trimmed = strings.TrimSpace(trimmed)
 	ident := ParseIdentifier(trimmed)
 
-	dropDB := types.DropDBStatement{
-		DBName: ident,
+	dropDB := types.DropTableStatement{
+		TableName: ident,
 	}
 
 	return dropDB, nil

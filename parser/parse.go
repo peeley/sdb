@@ -30,6 +30,14 @@ func Parse(input string) (types.Statement, error) {
 		return dropDB, nil
 	}
 
+	dropTable, err := ParseDropTableStatement(input)
+
+	if err != nil {
+		return nil, err
+	} else if dropTable != nil{
+		return dropTable, nil
+	}
+
 	useDB, err := ParseUseDBStatement(input)
 
 	if err != nil {
@@ -54,5 +62,5 @@ func Parse(input string) (types.Statement, error) {
 		return createDB, nil
 	}
 
-	return nil, errors.New("Syntax error.")
+	return nil, errors.New("!Syntax error.")
 }
