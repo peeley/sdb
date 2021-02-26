@@ -184,11 +184,48 @@ func (statement ExitCommand) Execute(state *DBState) error {
 	return nil
 }
 
+// Executes `ALTER TABLE <table_name> ADD <column_name> <column_type>;`
+// statements.
 func (statement AlterStatement) Execute(state *DBState) error {
-	_, err := openTable(state, statement.TableName)
+	tableFile, err := openTable(state, statement.TableName)
 	if err != nil {
-		return fmt.Errorf("!Failed to select from table %v because it does not exist.", statement.TableName)
+		return fmt.Errorf(
+			"!Failed to alter table %v because it does not exist.",
+			statement.TableName,
+		)
 	}
+
+	// read current header from table file
+	reader := bufio.NewReader(tableFile)
+	currentCols, err := reader.ReadString('\n')
+	currentCols = currentCols[:len(currentCols)-1] // chop off last `\n` char
+
+	if err != nil {
+		return err
+	}
+
+	// create new header string based off current header
+	var builder strings.Builder
+	builder.WriteString(currentCols)
+	builder.WriteString(
+		fmt.Sprintf(", %v %v\n",
+			statement.ColumnName,
+			statement.ColumnType.ToString(),
+		),
+	)
+
+	// overwrite header in table file with new header
+	_, err = tableFile.WriteAt([]byte(builder.String()), 0)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf(
+		"Table %v modified, added column %v.\n",
+		statement.TableName,
+		statement.ColumnName,
+	)
+
 	return nil
 }
 
@@ -222,7 +259,8 @@ func openTable(state *DBState, tableName string) (*os.File, error) {
 
 	tablePath := tablePathBuilder.String()
 
-	tableFile, err := os.Open(tablePath)
+	// open file with read & write permissions, unix perm bits set to 0777
+	tableFile, err := os.OpenFile(tablePath, os.O_RDWR, 0777)
 	if err != nil {
 		return nil, fmt.Errorf("!Failed to select from table %v because it does not exist.", tableName)
 	}

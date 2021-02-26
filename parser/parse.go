@@ -66,6 +66,14 @@ func Parse(input string) (types.Statement, error) {
 		return selectStatement, nil
 	}
 
+	alterStatement, err := ParseAlterStatement(input)
+
+	if err != nil {
+		return nil, err
+	} else if alterStatement != nil{
+		return alterStatement, nil
+	}
+
 	createTable, err := ParseCreateTableStatement(input)
 
 	if err != nil {
