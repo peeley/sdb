@@ -1,8 +1,9 @@
 package types
 
 import (
-	"os"
 	"fmt"
+	"os"
+	"strings"
 )
 
 type Statement interface {
@@ -23,7 +24,7 @@ type UseDBStatement struct {
 
 type CreateTableStatement struct {
 	TableName string
-	ColumnNames map[string]Type
+	Columns map[string]Type
 }
 
 type Comment struct{}
@@ -67,12 +68,39 @@ func (statement UseDBStatement) Execute(state *DBState) error {
 }
 
 func (statement CreateTableStatement) Execute(state *DBState) error {
-	// TODO
-	fmt.Printf("creating table %v with cols %v\n",
-		statement.TableName,
-		statement.ColumnNames,
-	)
 
+	var tablePathBuilder strings.Builder
+	tablePathBuilder.WriteString(state.CurrentDB)
+	tablePathBuilder.WriteString("/")
+	tablePathBuilder.WriteString(statement.TableName)
+
+	tablePath := tablePathBuilder.String()
+
+	tableFile, err := os.Create(tablePath)
+	if err != nil {
+		fmt.Println(err)
+		return fmt.Errorf("!Failed to create table %v because it already exists.", statement.TableName)
+	}
+
+	var tableTypesStringBuilder strings.Builder
+	idx := 0
+
+	for columnName, columnType := range statement.Columns {
+		columnString := fmt.Sprintf("%v %v", columnName, columnType.ToString())
+
+		if idx < len(statement.Columns) - 1 {
+			columnString = fmt.Sprintf("%v | ", columnString)
+		}
+		idx += 1
+
+		tableTypesStringBuilder.WriteString(columnString)
+	}
+
+	tableTypesString := tableTypesStringBuilder.String()
+	tableFile.WriteString(tableTypesString)
+	tableFile.WriteString("\n")
+
+	fmt.Printf("Table %v created.\n%v\n", statement.TableName, tableTypesString)
 	return nil
 }
 

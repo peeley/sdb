@@ -1,10 +1,10 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
 	"sdb/types"
 	"strings"
-	"errors"
 )
 
 func ParseCreateTableStatement(input string) (types.Statement, error){
@@ -33,7 +33,7 @@ func ParseCreateTableStatement(input string) (types.Statement, error){
 
 	statement := types.CreateTableStatement{
 		TableName: tableName,
-		ColumnNames: colList,
+		Columns: colList,
 	}
 
 	return &statement, nil
