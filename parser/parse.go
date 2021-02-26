@@ -22,6 +22,22 @@ func Parse(input string) (types.Statement, error) {
 		return nil, errors.New("Missing ';' at end of statement.")
 	}
 
+	dropDB, err := ParseDropDBStatement(input)
+
+	if err != nil {
+		return nil, err
+	} else if dropDB != nil{
+		return dropDB, nil
+	}
+
+	useDB, err := ParseUseDBStatement(input)
+
+	if err != nil {
+		return nil, err
+	} else if useDB != nil{
+		return useDB, nil
+	}
+
 	createTable, err := ParseCreateTableStatement(input)
 
 	if err != nil {

@@ -27,8 +27,13 @@ func main(){
 
 		if err != nil {
 			fmt.Println(err)
-		} else {
-			statement.Execute(&dbstate)
+			continue
+		}
+
+		err = statement.Execute(&dbstate)
+
+		if err != nil {
+			fmt.Println(err)
 		}
 	}
 }
