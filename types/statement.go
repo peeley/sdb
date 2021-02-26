@@ -51,6 +51,12 @@ type SelectStatement struct {
 	Columns string
 }
 
+type AlterStatement struct {
+	TableName string
+	ColumnName string
+	ColumnType Type
+}
+
 // Comments are essentially no-ops, but still parsed and as such need to
 // implement the `Statement interface`
 type Comment struct{}
@@ -95,20 +101,13 @@ func (statement DropDBStatement) Execute(state *DBState) error {
 // Executes `DROP TABLE <table_name>;` query. Assumes that the table being
 // deleted is in the current database stored in DBState.
 func (statement DropTableStatement) Execute(state *DBState) error {
-	var tablePathBuilder strings.Builder
-	tablePathBuilder.WriteString(state.CurrentDB)
-	tablePathBuilder.WriteString("/")
-	tablePathBuilder.WriteString(statement.TableName)
+	tablePath, exists := tableExists(state, statement.TableName)
 
-	tablePath := tablePathBuilder.String()
-
-	_, err := os.Stat(tablePath)
-
-	if err != nil {
+	if !exists {
 		return fmt.Errorf("!Failed to delete %v because it does not exist.", statement.TableName)
 	}
 
-	err = os.Remove(tablePath)
+	err := os.Remove(tablePath)
 
 	if err != nil {
 		return err
@@ -133,17 +132,9 @@ func (statement UseDBStatement) Execute(state *DBState) error {
 
 // Executes `CREATE TABLE <table_name> (<table_columns>);` queries.
 func (statement CreateTableStatement) Execute(state *DBState) error {
+	tablePath, exists := tableExists(state, statement.TableName)
 
-	var tablePathBuilder strings.Builder
-	tablePathBuilder.WriteString(state.CurrentDB)
-	tablePathBuilder.WriteString("/")
-	tablePathBuilder.WriteString(statement.TableName)
-
-	tablePath := tablePathBuilder.String()
-
-	_, err := os.Stat(tablePath)
-
-	if err == nil {
+	if exists {
 		return fmt.Errorf("!Failed to create table %v because it already exists.", statement.TableName)
 	}
 
@@ -163,15 +154,7 @@ func (statement CreateTableStatement) Execute(state *DBState) error {
 // Executes `SELECT <columns> FROM <table_name>;` queries. Currently only
 // supports querying from every column via <columns> = `*`.
 func (statement SelectStatement) Execute(state *DBState) error {
-
-	var tablePathBuilder strings.Builder
-	tablePathBuilder.WriteString(state.CurrentDB)
-	tablePathBuilder.WriteString("/")
-	tablePathBuilder.WriteString(statement.TableName)
-
-	tablePath := tablePathBuilder.String()
-
-	tableFile, err := os.Open(tablePath)
+	tableFile, err := openTable(state, statement.TableName)
 	if err != nil {
 		return fmt.Errorf("!Failed to select from table %v because it does not exist.", statement.TableName)
 	}
@@ -201,6 +184,14 @@ func (statement ExitCommand) Execute(state *DBState) error {
 	return nil
 }
 
+func (statement AlterStatement) Execute(state *DBState) error {
+	_, err := openTable(state, statement.TableName)
+	if err != nil {
+		return fmt.Errorf("!Failed to select from table %v because it does not exist.", statement.TableName)
+	}
+	return nil
+}
+
 // Private utility function to convert map representing column names to column
 // types to a formatted string.
 func columnsToString(columns map[string]Type) string {
@@ -219,4 +210,38 @@ func columnsToString(columns map[string]Type) string {
 	}
 
 	return tableTypesStringBuilder.String()
+}
+
+// Private utility function, opens table file based on current DBState and given
+// table name.
+func openTable(state *DBState, tableName string) (*os.File, error) {
+	var tablePathBuilder strings.Builder
+	tablePathBuilder.WriteString(state.CurrentDB)
+	tablePathBuilder.WriteString("/")
+	tablePathBuilder.WriteString(tableName)
+
+	tablePath := tablePathBuilder.String()
+
+	tableFile, err := os.Open(tablePath)
+	if err != nil {
+		return nil, fmt.Errorf("!Failed to select from table %v because it does not exist.", tableName)
+	}
+
+	return tableFile, nil
+}
+
+// Private utility function, determines if table exists given current DBState
+// and given table name. Return table path and boolean representing existence of
+// table.
+func tableExists(state *DBState, tableName string) (string, bool) {
+	var tablePathBuilder strings.Builder
+	tablePathBuilder.WriteString(state.CurrentDB)
+	tablePathBuilder.WriteString("/")
+	tablePathBuilder.WriteString(tableName)
+
+	tablePath := tablePathBuilder.String()
+
+	_, err := os.Stat(tablePath)
+
+	return tablePath, err == nil
 }
