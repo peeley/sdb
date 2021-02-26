@@ -33,6 +33,8 @@ type CreateTableStatement struct {
 
 type Comment struct{}
 
+type ExitCommand struct{}
+
 func (statement CreateDBStatement) Execute(state *DBState){
 	fmt.Println("creating db", statement.DBName)
 }
@@ -46,3 +48,8 @@ func (statement CreateTableStatement) Execute(state *DBState){
 }
 
 func (statement Comment) Execute(state *DBState){}
+
+func (statement ExitCommand) Execute(state *DBState){
+	fmt.Println("\nGoodbye!")
+	os.Exit(0)
+}

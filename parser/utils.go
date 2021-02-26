@@ -9,6 +9,9 @@ func IsComment(input string) bool {
 	return len(input) < 2 || (input[0] == '-' && input[1] == '-')
 }
 
+func IsExitCommand(input string) bool {
+	return strings.HasPrefix(".exit", input)
+}
 
 func ParseIdentifier(input string) string {
 	var builder strings.Builder
