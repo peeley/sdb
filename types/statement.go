@@ -22,14 +22,22 @@ type Statement interface {
 	Execute(*DBState)
 }
 
-type CreateStatement struct {
+type CreateDBStatement struct {
+	DBName string
+}
+
+type CreateTableStatement struct {
 	TableName string
 	ColumnNames map[string]string
 }
 
 type Comment struct{}
 
-func (statement CreateStatement) Execute(state *DBState){
+func (statement CreateDBStatement) Execute(state *DBState){
+	fmt.Println("creating db", statement.DBName)
+}
+
+func (statement CreateTableStatement) Execute(state *DBState){
 	// TODO
 	fmt.Printf("creating table %v with cols %v\n",
 		statement.TableName,
