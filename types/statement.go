@@ -71,7 +71,7 @@ type ExitCommand struct{}
 
 // Executes `CREATE DATABASE <db_name>;` query.
 func (statement CreateDBStatement) Execute(state *DBState) error {
-	err := os.Mkdir(statement.DBName, os.ModeDir)
+	err := os.Mkdir(statement.DBName, os.ModeDir | os.ModePerm)
 
 	if err != nil {
 		return fmt.Errorf(
