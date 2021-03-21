@@ -14,26 +14,21 @@ import (
 
 // Parses `ALTER TABLE` input.
 func ParseAlterStatement(input string) (types.Statement, error) {
-	prefix := "alter table"
-	if !strings.HasPrefix(input, prefix) {
+	trimmed, ok := HasPrefix(input, "alter table")
+	if !ok {
 		return nil, nil
 	}
-
-	trimmed := strings.TrimPrefix(input, prefix)
-	trimmed = strings.TrimSpace(trimmed)
 
 	tableName := ParseIdentifier(trimmed)
 	trimmed = strings.TrimPrefix(trimmed, tableName)
 	trimmed = strings.TrimSpace(trimmed)
 
-	addString := "add"
-	if !strings.HasPrefix(trimmed, addString) {
+	trimmed, ok = HasPrefix(input, "add")
+	if !ok {
 		return nil, fmt.Errorf(
 			"Expected `ADD` after table name in `ALTER` statement.",
 		)
 	}
-	trimmed = strings.TrimPrefix(trimmed, addString)
-	trimmed = strings.TrimSpace(trimmed)
 
 	newColName := ParseIdentifier(trimmed)
 	if newColName == "" {

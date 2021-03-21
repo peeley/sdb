@@ -24,6 +24,17 @@ func IsExitCommand(input string) bool {
 	return strings.HasPrefix(".exit", input)
 }
 
+func HasPrefix(input string, prefix string) (string, bool) {
+	if len(input) < len(prefix) || !strings.HasPrefix(input, prefix) {
+		return "", false
+	}
+
+	trimmed := strings.TrimPrefix(input, prefix)
+	trimmed = strings.TrimSpace(trimmed)
+
+	return trimmed, true
+}
+
 // Parses identifiers, which is any sequence of letters, numbers, and `_`
 func ParseIdentifier(input string) string {
 	var builder strings.Builder

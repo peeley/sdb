@@ -14,28 +14,23 @@ import (
 
 // Parses `SELECT` input.
 func ParseSelectStatement(input string) (types.Statement, error) {
-
-	prefix := "select"
-	if !strings.HasPrefix(input, prefix) {
+	trimmed, ok := HasPrefix(input, "select")
+	if !ok {
 		return nil, nil
 	}
 
-	trimmed := strings.TrimPrefix(input, prefix)
-	trimmed = strings.TrimSpace(trimmed)
-
-	// Currently, `SELECT` only supports querying every column at once via the
-	// `*` shortcut.
+	// FIXME add support to select cols by name
 	if trimmed[0] != '*' {
 		return nil, fmt.Errorf("Expected `SELECT` followed by `*`")
 	}
+
 	trimmed = strings.TrimPrefix(trimmed, "*")
 	trimmed = strings.TrimSpace(trimmed)
 
-	if !strings.HasPrefix(trimmed, "from") {
+	trimmed, ok = HasPrefix(trimmed, "from")
+	if !ok {
 		return nil, fmt.Errorf("Expected `FROM` after columns in `SELECT`.")
 	}
-	trimmed = strings.TrimPrefix(trimmed, "from")
-	trimmed = strings.TrimSpace(trimmed)
 
 	tableName := ParseIdentifier(trimmed)
 

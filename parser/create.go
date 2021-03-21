@@ -15,13 +15,10 @@ import (
 
 // Parses `CREATE TABLE <table_name> (<table_columns>);` input.
 func ParseCreateTableStatement(input string) (types.Statement, error){
-	prefix := "create table"
-	if len(input) < len(prefix) || !strings.HasPrefix(input, prefix) {
+	trimmed, ok := HasPrefix(input, "create table")
+	if !ok {
 		return nil, nil
 	}
-
-	trimmed := strings.TrimPrefix(input, prefix)
-	trimmed = strings.TrimSpace(trimmed)
 
 	tableName := ParseIdentifier(trimmed)
 
@@ -48,13 +45,11 @@ func ParseCreateTableStatement(input string) (types.Statement, error){
 
 // Parses `CREATE DATABASE <db_name>;` input.
 func ParseCreateDBStatement(input string) (types.Statement, error) {
-	prefix := "create database"
-	if len(input) < len(prefix) || !strings.HasPrefix(input, prefix) {
+	trimmed, ok := HasPrefix(input, "create database")
+	if !ok {
 		return nil, nil
 	}
 
-	trimmed := strings.TrimPrefix(input, prefix)
-	trimmed = strings.TrimSpace(trimmed)
 	ident := ParseIdentifier(trimmed)
 
 	createDB := types.CreateDBStatement{
@@ -67,13 +62,13 @@ func ParseCreateDBStatement(input string) (types.Statement, error) {
 // Private utility function to parse <table_columns> into map of
 // column name -> column type.
 func parseColumnList(input string) (map[string]types.Type, error) {
-	if len(input) < 1 || input[0] != '(' {
+	trimmed, ok := HasPrefix(input, "(")
+	if !ok {
 		return nil, errors.New(
 			"Expected '(' after table name in CREATE statement.",
 		)
 	}
 
-	trimmed := strings.TrimPrefix(input, "(")
 	cols := make(map[string]types.Type)
 
 	for {
