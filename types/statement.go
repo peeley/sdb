@@ -57,6 +57,11 @@ type AlterStatement struct {
 	ColumnType Type
 }
 
+type InsertStatement struct {
+	TableName string
+	Values []Value
+}
+
 // Comments are essentially no-ops, but still parsed and as such need to
 // implement the `Statement interface`
 type Comment struct{}

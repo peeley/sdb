@@ -48,6 +48,23 @@ func NewType(typename string, size int) Type {
 	return nil
 }
 
+type Value struct {
+	Value interface{}
+	Type Type
+}
+
+func (v *Value) GetValue() interface{} {
+	return v.Value
+}
+
+func (v *Value) GetType() Type {
+	return v.Type
+}
+
+func (v *Value) TypeMatches(t *Type) bool {
+	return v.GetType().ToString() == t.ToString()
+}
+
 // TODO Will also be used for type checking when DB implements insert/select
 // functionality.
 type Type interface {

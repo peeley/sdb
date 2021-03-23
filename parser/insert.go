@@ -11,7 +11,7 @@ func ParseInsertStatement(input string) (types.Statement, error){
 		return nil, nil
 	}
 
-	// tableName := ParseIdentifier(trimmed)
+	tableName := ParseIdentifier(trimmed)
 
 	trimmed, ok = HasPrefix(trimmed, "values(")
 	if !ok {
