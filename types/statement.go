@@ -66,11 +66,6 @@ type InsertStatement struct {
 // implement the `Statement interface`
 type Comment struct{}
 
-// The `.EXIT` command is the only command currently implemented, so it can fit
-// into the `Statement` interface as well.
-type ExitCommand struct{}
-
-
 
 // --- `Statement` interface implementations -----------------------------------
 
@@ -177,15 +172,6 @@ func (statement SelectStatement) Execute(state *DBState) error {
 
 // Executes comments - comments are essentially no-ops.
 func (statement Comment) Execute(state *DBState) error {
-	return nil
-}
-
-// Executes the `.EXIT` command, exits from program.
-func (statement ExitCommand) Execute(state *DBState) error {
-	fmt.Println("\nGoodbye!")
-	os.Exit(0)
-
-	// Unreachable, but necessary for return type
 	return nil
 }
 

@@ -15,6 +15,7 @@ import (
 	"os"
 	"sdb/parser"
 	"sdb/types"
+	"strings"
 )
 
 // Main REPL loop, runs until user terminates the loop or EOF is detected.
@@ -22,18 +23,43 @@ func main(){
 	reader := bufio.NewReader(os.Stdin)
 	dbstate := types.NewState()
 
+	var inputBuilder strings.Builder
+	var input string
+	var err error
 	for {
-		fmt.Print("> ")
+		fmt.Print("\n> ")
 
-		input, err := reader.ReadString('\n')
+		for {
+			input, err = reader.ReadString('\n')
+			inputBuilder.WriteString(input)
+
+			fmt.Printf("%v\n", strings.TrimSpace(input))
+			if strings.HasPrefix(input, "--") {
+				break
+			}
+
+			if strings.HasSuffix(strings.TrimSpace(input), ";") {
+				fmt.Println()
+				break
+			}
+
+			if strings.HasPrefix(strings.ToLower(strings.TrimSpace(input)), ".exit") {
+				fmt.Println("\nGoodbye!")
+				os.Exit(0)
+			}
+
+			fmt.Print(">> ")
+		}
+
 		if err != nil {
 			fmt.Println("\n\nGoodbye!")
 			break
 		}
 
-		fmt.Println(input)
+		inputStatement := inputBuilder.String()
+		inputBuilder.Reset()
 
-		statement, err := parser.Parse(input)
+		statement, err := parser.Parse(inputStatement)
 
 		if err != nil {
 			fmt.Println(err)

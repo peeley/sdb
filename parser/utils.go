@@ -19,11 +19,6 @@ func IsComment(input string) bool {
 	return len(input) < 2 || strings.HasPrefix(input, "--")
 }
 
-// Detects if input is `.EXIT` command
-func IsExitCommand(input string) bool {
-	return strings.HasPrefix(".exit", input)
-}
-
 func HasPrefix(input string, prefix string) (string, bool) {
 	if len(input) < len(prefix) || !strings.HasPrefix(input, prefix) {
 		return input, false

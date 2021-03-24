@@ -26,14 +26,6 @@ func Parse(input string) (types.Statement, error) {
 		return types.Comment{}, nil
 	}
 
-	if IsExitCommand(input) {
-		return types.ExitCommand{}, nil
-	}
-
-	if input[len(input)-1] != ';' {
-		return nil, errors.New("Missing ';' at end of statement.")
-	}
-
 	dropDB, err := ParseDropDBStatement(input)
 
 	if err != nil {
