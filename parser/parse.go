@@ -90,5 +90,13 @@ func Parse(input string) (types.Statement, error) {
 		return createDB, nil
 	}
 
+	insert, err := ParseInsertStatement(input)
+
+	if err != nil {
+		return nil, err
+	} else if insert != nil {
+		return insert, nil
+	}
+
 	return nil, errors.New("!Syntax error.")
 }

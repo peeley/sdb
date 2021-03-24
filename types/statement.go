@@ -234,6 +234,11 @@ func (statement AlterStatement) Execute(state *DBState) error {
 	return nil
 }
 
+func (statement InsertStatement) Execute(state *DBState) error {
+	fmt.Printf("inserting into table %v\n", statement.TableName)
+	return nil
+}
+
 // Private utility function to convert map representing column names to column
 // types to a formatted string.
 func columnsToString(columns map[string]Type) string {

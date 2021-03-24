@@ -26,7 +26,7 @@ func IsExitCommand(input string) bool {
 
 func HasPrefix(input string, prefix string) (string, bool) {
 	if len(input) < len(prefix) || !strings.HasPrefix(input, prefix) {
-		return "", false
+		return input, false
 	}
 
 	trimmed := strings.TrimPrefix(input, prefix)
@@ -188,24 +188,24 @@ func ParseFloat(input string) (*types.Value, error) {
 // Always returns a value of varchar(length of string)
 // This is checked against the column var/varchar(length) later
 func ParseString(input string) (*types.Value, error) {
-	trimmed, ok := HasPrefix(input, "\"")
+	trimmed, ok := HasPrefix(input, "'")
 	if !ok {
-		return nil, fmt.Errorf("Expected string to start with '\"''")
+		return nil, fmt.Errorf("Expected string to start with `'`")
 	}
 
 	var stringBuilder strings.Builder
 	for _, letter := range trimmed {
-		if letter == rune('"') {
+		if letter == rune('\'') {
 			break
 		}
 		stringBuilder.WriteRune(letter)
 	}
 	string := stringBuilder.String()
 
-	trimmed, _ = HasPrefix(input, string)
-	trimmed, ok = HasPrefix(input, "\"")
+	trimmed, _ = HasPrefix(trimmed, string)
+	trimmed, ok = HasPrefix(trimmed, "'")
 	if !ok {
-		return nil, fmt.Errorf("Expected string to end with '\"''")
+		return nil, fmt.Errorf("Expected string to end with `'`")
 	}
 
 	val := &types.Value{
@@ -216,7 +216,7 @@ func ParseString(input string) (*types.Value, error) {
 	return val, nil
 }
 
-func ParseValueList(input string) ([]types.Value, error) {
+func ParseValueList(input string) ([]types.Value, string, error) {
 	var valueList []types.Value
 
 	trimmed := input
@@ -224,13 +224,13 @@ func ParseValueList(input string) ([]types.Value, error) {
 	for {
 		value, err := ParseValue(trimmed)
 		if err != nil {
-			return nil, err
+			return nil, input, err
 		}
 		trimmed, _ = HasPrefix(trimmed, value.ToString())
 		valueList = append(valueList, *value)
 		trimmed, ok = HasPrefix(trimmed, ",")
 		if !ok {
-			return valueList, nil
+			return valueList, trimmed, nil
 		}
 	}
 }

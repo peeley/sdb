@@ -70,7 +70,7 @@ func (v *Value) ToString() string {
 		return fmt.Sprintf("%v", v.Value)
 	}
 	// otherwise, value is a string of some kind
-	return fmt.Sprintf("\"%v\"", v.Value)
+	return fmt.Sprintf("'%v'", v.Value)
 }
 
 // TODO Will also be used for type checking when DB implements insert/select
