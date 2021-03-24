@@ -65,6 +65,14 @@ func (v *Value) TypeMatches(t *Type) bool {
 	return v.GetType().ToString() == (*t).ToString()
 }
 
+func (v *Value) ToString() string {
+	if v.Type.ToString() == "float" || v.Type.ToString() == "int" {
+		return fmt.Sprintf("%v", v.Value)
+	}
+	// otherwise, value is a string of some kind
+	return fmt.Sprintf("\"%v\"", v.Value)
+}
+
 // TODO Will also be used for type checking when DB implements insert/select
 // functionality.
 type Type interface {

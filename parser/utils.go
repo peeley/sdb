@@ -215,3 +215,22 @@ func ParseString(input string) (*types.Value, error) {
 
 	return val, nil
 }
+
+func ParseValueList(input string) ([]types.Value, error) {
+	var valueList []types.Value
+
+	trimmed := input
+	var ok bool
+	for {
+		value, err := ParseValue(trimmed)
+		if err != nil {
+			return nil, err
+		}
+		trimmed, _ = HasPrefix(trimmed, value.ToString())
+		valueList = append(valueList, *value)
+		trimmed, ok = HasPrefix(trimmed, ",")
+		if !ok {
+			return valueList, nil
+		}
+	}
+}
