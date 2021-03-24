@@ -91,3 +91,127 @@ func ParseType(input string) (types.Type, error) {
 
 	return types.NewType(baseType, size), nil
 }
+
+// Parses type in tuple e.g. 123, 3.14, "hello"
+func ParseValue(input string) (*types.Value, error) {
+
+	float, err := ParseFloat(input)
+	if float != nil {
+		return float, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	int, err := ParseInt(input)
+	if int != nil {
+		return int, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	string, err := ParseString(input)
+	if string != nil {
+		return string, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &types.Value{ Value: nil, Type: types.Null{}}, nil
+}
+
+// Parse floating point numeric of arbitrary precision
+func ParseInt(input string) (*types.Value, error) {
+
+	var integerBuilder strings.Builder
+	for _, digit := range input {
+		if !unicode.IsNumber(digit) {
+			break
+		}
+		integerBuilder.WriteRune(digit)
+	}
+	integerString := integerBuilder.String()
+
+	if integerString == "" {
+		return nil, nil
+	}
+
+	integer, err := strconv.Atoi(integerString)
+
+	if err != nil {
+		return nil, err
+	}
+
+	val := types.Value {
+		Value: integer,
+		Type: types.Int{},
+	}
+	return &val, nil
+}
+
+// Parse integer
+func ParseFloat(input string) (*types.Value, error) {
+	var integerBuilder strings.Builder
+	for _, digit := range input {
+		if !unicode.IsNumber(digit) {
+			break
+		}
+		integerBuilder.WriteRune(digit)
+	}
+	integerString := integerBuilder.String()
+	integer, _ := strconv.Atoi(integerString)
+
+	trimmed, _ := HasPrefix(input, integerString)
+	trimmed, ok := HasPrefix(trimmed, ".")
+	if !ok {
+		return nil, nil
+	}
+
+	var decimalBuilder strings.Builder
+	decimalBuilder.WriteString("0.")
+	for _, digit := range trimmed {
+		if !unicode.IsNumber(digit) {
+			break
+		}
+		decimalBuilder.WriteRune(digit)
+	}
+	decimalString := decimalBuilder.String()
+	decimal, _ := strconv.ParseFloat(decimalString, 64)
+
+	val := &types.Value{
+		Value: float64(integer) + decimal,
+		Type: types.Float{},
+	}
+	return val, nil
+}
+
+// Parse string.
+// Always returns a value of varchar(length of string)
+// This is checked against the column var/varchar(length) later
+func ParseString(input string) (*types.Value, error) {
+	trimmed, ok := HasPrefix(input, "\"")
+	if !ok {
+		return nil, fmt.Errorf("Expected string to start with '\"''")
+	}
+
+	var stringBuilder strings.Builder
+	for _, letter := range trimmed {
+		if letter == rune('"') {
+			break
+		}
+		stringBuilder.WriteRune(letter)
+	}
+	string := stringBuilder.String()
+
+	trimmed, _ = HasPrefix(input, string)
+	trimmed, ok = HasPrefix(input, "\"")
+	if !ok {
+		return nil, fmt.Errorf("Expected string to end with '\"''")
+	}
+
+	val := &types.Value{
+		Value: string,
+		Type: types.VarChar{ Size: len(string) },
+	}
+
+	return val, nil
+}

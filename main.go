@@ -22,6 +22,14 @@ func main(){
 	reader := bufio.NewReader(os.Stdin)
 	dbstate := types.NewState()
 
+	testStr := "\"123.56\""
+	parsed, err := parser.ParseValue(testStr)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(parsed.GetValue(), parsed.GetType().ToString())
+	}
+
 	for {
 		fmt.Print("> ")
 

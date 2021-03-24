@@ -62,7 +62,7 @@ func (v *Value) GetType() Type {
 }
 
 func (v *Value) TypeMatches(t *Type) bool {
-	return v.GetType().ToString() == t.ToString()
+	return v.GetType().ToString() == (*t).ToString()
 }
 
 // TODO Will also be used for type checking when DB implements insert/select
@@ -90,17 +90,23 @@ func (int Int) ToString() string {
 }
 
 type Char struct {
-	size int
+	Size int
 }
 
 func (char Char) ToString() string {
-	return fmt.Sprintf("char(%v)", char.size)
+	return fmt.Sprintf("char(%v)", char.Size)
 }
 
 type VarChar struct {
-	size int
+	Size int
 }
 
 func (varchar VarChar) ToString() string {
-	return fmt.Sprintf("varchar(%v)", varchar.size)
+	return fmt.Sprintf("varchar(%v)", varchar.Size)
+}
+
+type Null struct {}
+
+func (null Null) ToString() string {
+	return "NULL"
 }
