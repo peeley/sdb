@@ -280,15 +280,15 @@ func (statement InsertStatement) Execute(state *metatypes.DBState) error {
 			rowBuilder.WriteString(", ")
 		}
 	}
+	rowBuilder.WriteRune('\n')
 
-	writer := bufio.NewWriter(tableFile)
 	rowString := rowBuilder.String()
 
-	_, err = writer.WriteString(rowString)
+	_, err = tableFile.WriteString(rowString)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Inserted `%v` into %v\n", rowString, statement.TableName)
+	fmt.Printf("Inserted `%v` into %v\n", strings.TrimSpace(rowString), statement.TableName)
 
 	return nil
 }
