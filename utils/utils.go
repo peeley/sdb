@@ -1,14 +1,14 @@
 // Noah Snelson
 // February 25, 2021
-// sdb/parser/utils.go
+// sdb/parser/go
 //
 // Common parsing utilities used across several top-level parsing functions.
 
-package parser
+package utils
 
 import (
 	"fmt"
-	"sdb/types"
+	"sdb/types/metatypes"
 	"strconv"
 	"strings"
 	"unicode"
@@ -48,12 +48,12 @@ func ParseIdentifier(input string) string {
 
 // Parses the various types the database supports, like `float`, `int`,
 // `char(X)`, and `varchar(X)`.
-func ParseType(input string) (types.Type, error) {
+func ParseType(input string) (metatypes.Type, error) {
 	baseType := ParseIdentifier(input)
 
-	for _, typeName := range types.ConstWidthTypes {
+	for _, typeName := range metatypes.ConstWidthTypes {
 		if typeName == baseType {
-			return types.NewType(typeName, 0), nil
+			return metatypes.NewType(typeName, 0), nil
 		}
 	}
 
@@ -84,11 +84,11 @@ func ParseType(input string) (types.Type, error) {
 		return nil, err
 	}
 
-	return types.NewType(baseType, size), nil
+	return metatypes.NewType(baseType, size), nil
 }
 
 // Parses type in tuple e.g. 123, 3.14, "hello"
-func ParseValue(input string) (*types.Value, error) {
+func ParseValue(input string) (*metatypes.Value, error) {
 
 	float, err := ParseFloat(input)
 	if float != nil {
@@ -111,11 +111,11 @@ func ParseValue(input string) (*types.Value, error) {
 		return nil, err
 	}
 
-	return &types.Value{ Value: nil, Type: types.Null{}}, nil
+	return &metatypes.Value{ Value: nil, Type: metatypes.Null{}}, nil
 }
 
 // Parse floating point numeric of arbitrary precision
-func ParseInt(input string) (*types.Value, error) {
+func ParseInt(input string) (*metatypes.Value, error) {
 
 	var integerBuilder strings.Builder
 	for _, digit := range input {
@@ -136,15 +136,15 @@ func ParseInt(input string) (*types.Value, error) {
 		return nil, err
 	}
 
-	val := types.Value {
+	val := metatypes.Value {
 		Value: integer,
-		Type: types.Int{},
+		Type: metatypes.Int{},
 	}
 	return &val, nil
 }
 
 // Parse integer
-func ParseFloat(input string) (*types.Value, error) {
+func ParseFloat(input string) (*metatypes.Value, error) {
 	var integerBuilder strings.Builder
 	for _, digit := range input {
 		if !unicode.IsNumber(digit) {
@@ -172,9 +172,9 @@ func ParseFloat(input string) (*types.Value, error) {
 	decimalString := decimalBuilder.String()
 	decimal, _ := strconv.ParseFloat(decimalString, 64)
 
-	val := &types.Value{
+	val := &metatypes.Value{
 		Value: float64(integer) + decimal,
-		Type: types.Float{},
+		Type: metatypes.Float{},
 	}
 	return val, nil
 }
@@ -182,7 +182,7 @@ func ParseFloat(input string) (*types.Value, error) {
 // Parse string.
 // Always returns a value of varchar(length of string)
 // This is checked against the column var/varchar(length) later
-func ParseString(input string) (*types.Value, error) {
+func ParseString(input string) (*metatypes.Value, error) {
 	trimmed, ok := HasPrefix(input, "'")
 	if !ok {
 		return nil, fmt.Errorf("Expected string to start with `'`")
@@ -203,16 +203,16 @@ func ParseString(input string) (*types.Value, error) {
 		return nil, fmt.Errorf("Expected string to end with `'`")
 	}
 
-	val := &types.Value{
+	val := &metatypes.Value{
 		Value: string,
-		Type: types.VarChar{ Size: len(string) },
+		Type: metatypes.VarChar{ Size: len(string) },
 	}
 
 	return val, nil
 }
 
-func ParseValueList(input string) ([]types.Value, string, error) {
-	var valueList []types.Value
+func ParseValueList(input string) ([]metatypes.Value, string, error) {
+	var valueList []metatypes.Value
 
 	trimmed := input
 	var ok bool

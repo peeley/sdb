@@ -8,16 +8,17 @@ package parser
 
 import (
 	"sdb/types"
+	"sdb/utils"
 )
 
 // Parses `DROP DATABASE <table_name>;` input.
 func ParseDropDBStatement(input string) (types.Statement, error) {
-	trimmed, ok := HasPrefix(input, "drop database")
+	trimmed, ok := utils.HasPrefix(input, "drop database")
 	if !ok {
 		return nil, nil
 	}
 
-	ident := ParseIdentifier(trimmed)
+	ident := utils.ParseIdentifier(trimmed)
 
 	dropDB := types.DropDBStatement{
 		DBName: ident,
@@ -28,12 +29,12 @@ func ParseDropDBStatement(input string) (types.Statement, error) {
 
 // Parses `DROP TABLE <table_name>;` input.
 func ParseDropTableStatement(input string) (types.Statement, error) {
-	trimmed, ok := HasPrefix(input, "drop table")
+	trimmed, ok := utils.HasPrefix(input, "drop table")
 	if !ok {
 		return nil, nil
 	}
 
-	ident := ParseIdentifier(trimmed)
+	ident := utils.ParseIdentifier(trimmed)
 
 	dropDB := types.DropTableStatement{
 		TableName: ident,

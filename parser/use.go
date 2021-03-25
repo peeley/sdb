@@ -8,16 +8,17 @@ package parser
 
 import (
 	"sdb/types"
+	"sdb/utils"
 )
 
 // Parses `USE <db_name>;` input.
 func ParseUseDBStatement(input string) (types.Statement, error) {
-	trimmed, ok := HasPrefix(input, "use")
+	trimmed, ok :=utils.HasPrefix(input, "use")
 	if !ok {
 		return nil, nil
 	}
 
-	ident := ParseIdentifier(trimmed)
+	ident := utils.ParseIdentifier(trimmed)
 
 	dropDB := types.UseDBStatement{
 		DBName: ident,

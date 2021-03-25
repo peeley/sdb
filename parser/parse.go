@@ -13,6 +13,7 @@ package parser
 import (
 	"errors"
 	"sdb/types"
+	"sdb/utils"
 	"strings"
 )
 
@@ -22,7 +23,7 @@ func Parse(input string) (types.Statement, error) {
 	input = strings.TrimSpace(input)
 	input = strings.ToLower(input)
 
-	if IsComment(input) {
+	if utils.IsComment(input) {
 		return types.Comment{}, nil
 	}
 

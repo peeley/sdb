@@ -11,6 +11,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sdb/types/metatypes"
+	"sdb/utils"
 	"strings"
 )
 
@@ -18,7 +20,7 @@ import (
 // contains the core logic of the query, which is executed in the REPL at the
 // `sdb/main.go` main function.
 type Statement interface {
-	Execute(*DBState) error
+	Execute(*metatypes.DBState) error
 }
 
 // These statement structs are what is output by their respective parsing
@@ -39,7 +41,7 @@ type UseDBStatement struct {
 
 type CreateTableStatement struct {
 	TableName string
-	Columns map[string]Type
+	Columns map[string]metatypes.Type
 }
 
 type DropTableStatement struct {
@@ -54,12 +56,12 @@ type SelectStatement struct {
 type AlterStatement struct {
 	TableName string
 	ColumnName string
-	ColumnType Type
+	ColumnType metatypes.Type
 }
 
 type InsertStatement struct {
 	TableName string
-	Values []Value
+	Values []metatypes.Value
 }
 
 // Comments are essentially no-ops, but still parsed and as such need to
@@ -70,7 +72,7 @@ type Comment struct{}
 // --- `Statement` interface implementations -----------------------------------
 
 // Executes `CREATE DATABASE <db_name>;` query.
-func (statement CreateDBStatement) Execute(state *DBState) error {
+func (statement CreateDBStatement) Execute(state *metatypes.DBState) error {
 	err := os.Mkdir(statement.DBName, os.ModeDir | os.ModePerm)
 
 	if err != nil {
@@ -85,7 +87,7 @@ func (statement CreateDBStatement) Execute(state *DBState) error {
 }
 
 // Executes `DROP DATABASE <db_name>;` query.
-func (statement DropDBStatement) Execute(state *DBState) error {
+func (statement DropDBStatement) Execute(state *metatypes.DBState) error {
 	_, err := os.Stat(statement.DBName)
 
 	if err != nil {
@@ -100,7 +102,7 @@ func (statement DropDBStatement) Execute(state *DBState) error {
 
 // Executes `DROP TABLE <table_name>;` query. Assumes that the table being
 // deleted is in the current database stored in DBState.
-func (statement DropTableStatement) Execute(state *DBState) error {
+func (statement DropTableStatement) Execute(state *metatypes.DBState) error {
 	tablePath, exists := tableExists(state, statement.TableName)
 
 	if !exists {
@@ -118,7 +120,7 @@ func (statement DropTableStatement) Execute(state *DBState) error {
 }
 
 // Executes `USE <db_name>;` queries. Changes the current DB in DBState.
-func (statement UseDBStatement) Execute(state *DBState) error {
+func (statement UseDBStatement) Execute(state *metatypes.DBState) error {
 	_, err := os.Stat(statement.DBName)
 
 	if err != nil {
@@ -131,7 +133,7 @@ func (statement UseDBStatement) Execute(state *DBState) error {
 }
 
 // Executes `CREATE TABLE <table_name> (<table_columns>);` queries.
-func (statement CreateTableStatement) Execute(state *DBState) error {
+func (statement CreateTableStatement) Execute(state *metatypes.DBState) error {
 	tablePath, exists := tableExists(state, statement.TableName)
 
 	if exists {
@@ -153,8 +155,9 @@ func (statement CreateTableStatement) Execute(state *DBState) error {
 
 // Executes `SELECT <columns> FROM <table_name>;` queries. Currently only
 // supports querying from every column via <columns> = `*`.
-func (statement SelectStatement) Execute(state *DBState) error {
-	tableFile, err := openTable(state, statement.TableName)
+func (statement SelectStatement) Execute(state *metatypes.DBState) error {
+	tableFile, err := openTable(state, statement.TableName, os.O_RDONLY)
+	defer tableFile.Close()
 	if err != nil {
 		return fmt.Errorf("!Failed to select from table %v because it does not exist.", statement.TableName)
 	}
@@ -171,14 +174,15 @@ func (statement SelectStatement) Execute(state *DBState) error {
 }
 
 // Executes comments - comments are essentially no-ops.
-func (statement Comment) Execute(state *DBState) error {
+func (statement Comment) Execute(state *metatypes.DBState) error {
 	return nil
 }
 
 // Executes `ALTER TABLE <table_name> ADD <column_name> <column_type>;`
 // statements.
-func (statement AlterStatement) Execute(state *DBState) error {
-	tableFile, err := openTable(state, statement.TableName)
+func (statement AlterStatement) Execute(state *metatypes.DBState) error {
+	tableFile, err := openTable(state, statement.TableName, os.O_RDWR)
+	defer tableFile.Close()
 	if err != nil {
 		return fmt.Errorf(
 			"!Failed to alter table %v because it does not exist.",
@@ -220,14 +224,78 @@ func (statement AlterStatement) Execute(state *DBState) error {
 	return nil
 }
 
-func (statement InsertStatement) Execute(state *DBState) error {
-	fmt.Printf("inserting into table %v\n", statement.TableName)
+func (statement InsertStatement) Execute(state *metatypes.DBState) error {
+	tableFile, err := openTable(state, statement.TableName, os.O_APPEND|os.O_RDWR)
+	defer tableFile.Close()
+	if err != nil {
+		return fmt.Errorf("!Failed to insert into table %v because it does not exist.", statement.TableName)
+	}
+	defer tableFile.Close()
+
+	reader := bufio.NewReader(tableFile)
+	tableHeader, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("!Failed to read from table file %v.", statement.TableName)
+	}
+
+	fmt.Println("table header:", tableHeader)
+	var tableTypes []metatypes.Type
+	var ok bool
+	for {
+		if tableHeader == "" {
+			break
+		}
+
+		ident := utils.ParseIdentifier(tableHeader)
+		tableHeader, _ = utils.HasPrefix(tableHeader, ident)
+
+		typeName, err := utils.ParseType(tableHeader)
+		if err != nil {
+			return err
+		}
+		tableTypes = append(tableTypes, typeName)
+
+		tableHeader, _ = utils.HasPrefix(tableHeader, typeName.ToString())
+		tableHeader, ok = utils.HasPrefix(tableHeader, ",")
+		if !ok {
+			break
+		}
+
+	}
+
+	if len(tableTypes) != len(statement.Values) {
+		return fmt.Errorf("!Failed, list of values to insert does not match table arity.")
+	}
+	// check types match
+	for statementIdx, tableColType := range tableTypes {
+		if !statement.Values[statementIdx].TypeMatches(&tableColType) {
+			return fmt.Errorf("!Value %v is not of type %v", statement.Values[statementIdx], tableColType.ToString())
+		}
+	}
+
+	var rowBuilder strings.Builder
+	for idx, val := range statement.Values {
+		rowBuilder.WriteString(val.ToString())
+		if idx < len(statement.Values)-1 {
+			rowBuilder.WriteString(", ")
+		}
+	}
+
+	writer := bufio.NewWriter(tableFile)
+	rowString := rowBuilder.String()
+
+	_, err = writer.WriteString(rowString)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Inserted `%v` into %v\n", rowString, statement.TableName)
+
 	return nil
 }
 
 // Private utility function to convert map representing column names to column
 // types to a formatted string.
-func columnsToString(columns map[string]Type) string {
+func columnsToString(columns map[string]metatypes.Type) string {
 	var tableTypesStringBuilder strings.Builder
 	idx := 0
 
@@ -247,7 +315,7 @@ func columnsToString(columns map[string]Type) string {
 
 // Private utility function, opens table file based on current DBState and given
 // table name.
-func openTable(state *DBState, tableName string) (*os.File, error) {
+func openTable(state *metatypes.DBState, tableName string, flags int) (*os.File, error) {
 	var tablePathBuilder strings.Builder
 	tablePathBuilder.WriteString(state.CurrentDB)
 	tablePathBuilder.WriteString("/")
@@ -255,8 +323,8 @@ func openTable(state *DBState, tableName string) (*os.File, error) {
 
 	tablePath := tablePathBuilder.String()
 
-	// open file with read & write permissions, unix perm bits set to 0777
-	tableFile, err := os.OpenFile(tablePath, os.O_RDWR, 0777)
+	// open file with mode flags, unix perm bits set to 0777
+	tableFile, err := os.OpenFile(tablePath, flags, 0777)
 	if err != nil {
 		return nil, fmt.Errorf("!Failed to select from table %v because it does not exist.", tableName)
 	}
@@ -267,7 +335,7 @@ func openTable(state *DBState, tableName string) (*os.File, error) {
 // Private utility function, determines if table exists given current DBState
 // and given table name. Return table path and boolean representing existence of
 // table.
-func tableExists(state *DBState, tableName string) (string, bool) {
+func tableExists(state *metatypes.DBState, tableName string) (string, bool) {
 	var tablePathBuilder strings.Builder
 	tablePathBuilder.WriteString(state.CurrentDB)
 	tablePathBuilder.WriteString("/")

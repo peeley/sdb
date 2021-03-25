@@ -14,14 +14,14 @@ import (
 	"fmt"
 	"os"
 	"sdb/parser"
-	"sdb/types"
+	"sdb/types/metatypes"
 	"strings"
 )
 
 // Main REPL loop, runs until user terminates the loop or EOF is detected.
 func main(){
 	reader := bufio.NewReader(os.Stdin)
-	dbstate := types.NewState()
+	dbstate := metatypes.NewState()
 
 	var inputBuilder strings.Builder
 	var input string

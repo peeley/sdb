@@ -5,10 +5,11 @@
 // Contains types for core database functionality, including current database
 // state and all the types stored by the database.
 
-package types
+package metatypes
 
 import (
 	"fmt"
+	"strings"
 )
 
 // Types based on fixed with vs. dynamic width. Used in `parser`.
@@ -62,7 +63,31 @@ func (v *Value) GetType() Type {
 }
 
 func (v *Value) TypeMatches(t *Type) bool {
-	return v.GetType().ToString() == (*t).ToString()
+	if strings.Contains(v.GetType().ToString(), "int") {
+		return v.GetType().ToString() == (*t).ToString()
+	} else if strings.Contains(v.GetType().ToString(), "float") {
+		return v.GetType().ToString() == (*t).ToString()
+	}
+	// v is a varchar or char, in which case it's valid as long as it's <= the
+	// column's required length
+	candVarChar, ok := v.GetType().(VarChar)
+	if ok { // inserted type is varchar
+		colVarChar, ok := (*t).(Char)
+		if ok { // cand is varchar, column is char
+			return candVarChar.Size <= colVarChar.Size
+		} else { // cand is varchar, col is varchar
+			colChar := (*t).(VarChar)
+			return candVarChar.Size <= colChar.Size
+		}
+	}
+	candChar := v.GetType().(Char)
+	colChar, ok := (*t).(Char)
+	if ok { // cand is char, column is char
+		return candChar.Size == colChar.Size
+	} else { // cand is char, col is varchar
+		colVarChar := (*t).(VarChar)
+		return candChar.Size <= colVarChar.Size
+	}
 }
 
 func (v *Value) ToString() string {

@@ -9,12 +9,13 @@ package parser
 import (
 	"fmt"
 	"sdb/types"
+	"sdb/utils"
 	"strings"
 )
 
 // Parses `SELECT` input.
 func ParseSelectStatement(input string) (types.Statement, error) {
-	trimmed, ok := HasPrefix(input, "select")
+	trimmed, ok := utils.HasPrefix(input, "select")
 	if !ok {
 		return nil, nil
 	}
@@ -27,12 +28,12 @@ func ParseSelectStatement(input string) (types.Statement, error) {
 	trimmed = strings.TrimPrefix(trimmed, "*")
 	trimmed = strings.TrimSpace(trimmed)
 
-	trimmed, ok = HasPrefix(trimmed, "from")
+	trimmed, ok = utils.HasPrefix(trimmed, "from")
 	if !ok {
 		return nil, fmt.Errorf("Expected `FROM` after columns in `SELECT`.")
 	}
 
-	tableName := ParseIdentifier(trimmed)
+	tableName := utils.ParseIdentifier(trimmed)
 
 	statement := types.SelectStatement {
 		TableName: tableName,

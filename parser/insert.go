@@ -3,30 +3,32 @@ package parser
 import (
 	"fmt"
 	"sdb/types"
+	"sdb/types/metatypes"
+	"sdb/utils"
 )
 
 func ParseInsertStatement(input string) (types.Statement, error){
-	trimmed, ok := HasPrefix(input, "insert into")
+	trimmed, ok := utils.HasPrefix(input, "insert into")
 	if !ok {
 		return nil, nil
 	}
 
-	tableName := ParseIdentifier(trimmed)
-	trimmed, _ = HasPrefix(trimmed, tableName)
+	tableName := utils.ParseIdentifier(trimmed)
+	trimmed, _ = utils.HasPrefix(trimmed, tableName)
 
-	trimmed, ok = HasPrefix(trimmed, "values(")
+	trimmed, ok = utils.HasPrefix(trimmed, "values(")
 	if !ok {
 		return nil, fmt.Errorf("Expected 'values' after table to insert into")
 	}
 
-	var valueList []types.Value
+	var valueList []metatypes.Value
 	var err error
-	valueList, trimmed, err = ParseValueList(trimmed)
+	valueList, trimmed, err = utils.ParseValueList(trimmed)
 	if err != nil {
 		return nil, err
 	}
 
-	trimmed, ok = HasPrefix(trimmed, ")")
+	trimmed, ok = utils.HasPrefix(trimmed, ")")
 	if !ok {
 		return nil, fmt.Errorf("Expected list of values to end in ')'")
 	}

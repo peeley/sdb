@@ -10,17 +10,19 @@ import (
 	"errors"
 	"fmt"
 	"sdb/types"
+	"sdb/types/metatypes"
+	"sdb/utils"
 	"strings"
 )
 
 // Parses `CREATE TABLE <table_name> (<table_columns>);` input.
 func ParseCreateTableStatement(input string) (types.Statement, error){
-	trimmed, ok := HasPrefix(input, "create table")
+	trimmed, ok := utils.HasPrefix(input, "create table")
 	if !ok {
 		return nil, nil
 	}
 
-	tableName := ParseIdentifier(trimmed)
+	tableName := utils.ParseIdentifier(trimmed)
 
 	if tableName == "" {
 		return nil, errors.New("Missing table name.")
@@ -45,12 +47,12 @@ func ParseCreateTableStatement(input string) (types.Statement, error){
 
 // Parses `CREATE DATABASE <db_name>;` input.
 func ParseCreateDBStatement(input string) (types.Statement, error) {
-	trimmed, ok := HasPrefix(input, "create database")
+	trimmed, ok := utils.HasPrefix(input, "create database")
 	if !ok {
 		return nil, nil
 	}
 
-	ident := ParseIdentifier(trimmed)
+	ident := utils.ParseIdentifier(trimmed)
 
 	createDB := types.CreateDBStatement{
 		DBName: ident,
@@ -61,23 +63,23 @@ func ParseCreateDBStatement(input string) (types.Statement, error) {
 
 // Private utility function to parse <table_columns> into map of
 // column name -> column type.
-func parseColumnList(input string) (map[string]types.Type, error) {
-	trimmed, ok := HasPrefix(input, "(")
+func parseColumnList(input string) (map[string]metatypes.Type, error) {
+	trimmed, ok := utils.HasPrefix(input, "(")
 	if !ok {
 		return nil, errors.New(
 			"Expected '(' after table name in CREATE statement.",
 		)
 	}
 
-	cols := make(map[string]types.Type)
+	cols := make(map[string]metatypes.Type)
 
 	for {
 		trimmed = strings.TrimSpace(trimmed)
-		ident := ParseIdentifier(trimmed)
+		ident := utils.ParseIdentifier(trimmed)
 		trimmed = strings.TrimPrefix(trimmed, ident)
 
 		trimmed = strings.TrimSpace(trimmed)
-		typeName, err := ParseType(trimmed)
+		typeName, err := utils.ParseType(trimmed)
 		if err != nil {
 			return nil, err
 		}

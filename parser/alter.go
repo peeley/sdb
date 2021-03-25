@@ -9,28 +9,29 @@ package parser
 import (
 	"fmt"
 	"sdb/types"
+	"sdb/utils"
 	"strings"
 )
 
 // Parses `ALTER TABLE` input.
 func ParseAlterStatement(input string) (types.Statement, error) {
-	trimmed, ok := HasPrefix(input, "alter table")
+	trimmed, ok :=utils.HasPrefix(input, "alter table")
 	if !ok {
 		return nil, nil
 	}
 
-	tableName := ParseIdentifier(trimmed)
+	tableName := utils.ParseIdentifier(trimmed)
 	trimmed = strings.TrimPrefix(trimmed, tableName)
 	trimmed = strings.TrimSpace(trimmed)
 
-	trimmed, ok = HasPrefix(input, "add")
+	trimmed, ok =utils.HasPrefix(input, "add")
 	if !ok {
 		return nil, fmt.Errorf(
 			"Expected `ADD` after table name in `ALTER` statement.",
 		)
 	}
 
-	newColName := ParseIdentifier(trimmed)
+	newColName := utils.ParseIdentifier(trimmed)
 	if newColName == "" {
 		return nil, fmt.Errorf(
 			"Missing column name after `ADD` in `ALTER` statement.",
@@ -39,7 +40,7 @@ func ParseAlterStatement(input string) (types.Statement, error) {
 	trimmed = strings.TrimPrefix(trimmed, newColName)
 	trimmed = strings.TrimSpace(trimmed)
 
-	typeName, err := ParseType(trimmed)
+	typeName, err := utils.ParseType(trimmed)
 	if err != nil {
 		return nil, err
 	}
