@@ -27,13 +27,15 @@ func main(){
 	var input string
 	var err error
 	for {
-		fmt.Print("\n> ")
-
 		for {
 			input, err = reader.ReadString('\n')
 			inputBuilder.WriteString(input)
+			if len(strings.TrimSpace(input)) == 0 {
+				break
+			}
 
-			fmt.Printf("%v\n", strings.TrimSpace(input))
+			fmt.Print(">")
+			fmt.Printf(" %v\n", strings.TrimSpace(input))
 			if strings.HasPrefix(input, "--") {
 				break
 			}
@@ -48,7 +50,7 @@ func main(){
 				os.Exit(0)
 			}
 
-			fmt.Print(">> ")
+			fmt.Print(">")
 		}
 
 		if err != nil {

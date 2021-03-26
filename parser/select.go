@@ -37,7 +37,8 @@ func ParseSelectStatement(input string) (types.Statement, error) {
 
 	statement := types.SelectStatement {
 		TableName: tableName,
-		Columns: "*",
+		ColumnNames: []string{"*"},
+		WhereClause: nil,
 	}
 
 	return statement, nil

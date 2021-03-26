@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"os"
 )
 
 // Detects if input is comment by checking if it begins with "--"
@@ -36,8 +37,7 @@ func ParseIdentifier(input string) string {
 
 	for idx := 0; idx < len(input); idx++ {
 		char := rune(input[idx])
-		if unicode.IsSpace(char) ||
-			!(unicode.IsLetter(char) || unicode.IsNumber(char) || char == rune('_')) {
+		if !(unicode.IsLetter(char) || unicode.IsNumber(char) || char == rune('_') || char == rune('*')) {
 			break
 		}
 		builder.WriteByte(input[idx])
@@ -228,4 +228,67 @@ func ParseValueList(input string) ([]metatypes.Value, string, error) {
 			return valueList, trimmed, nil
 		}
 	}
+}
+
+func ValueListToString(list []metatypes.Value) string {
+	var stringBuilder strings.Builder
+	for idx, val := range list {
+		stringBuilder.WriteString(val.ToString())
+		if idx < len(list) - 1 {
+			stringBuilder.WriteString(", ")
+		}
+	}
+	stringBuilder.WriteString("\n")
+
+	return stringBuilder.String()
+}
+
+// Determines if table exists given current DBState and given table name. Return
+// table path and boolean representing existence of table.
+func TableExists(state *metatypes.DBState, tableName string) (string, bool) {
+	var tablePathBuilder strings.Builder
+	tablePathBuilder.WriteString(state.CurrentDB)
+	tablePathBuilder.WriteString("/")
+	tablePathBuilder.WriteString(tableName)
+
+	tablePath := tablePathBuilder.String()
+
+	_, err := os.Stat(tablePath)
+
+	return tablePath, err == nil
+}
+
+// Opens table file based on current DBState and given table name.
+func OpenTable(state *metatypes.DBState, tableName string, flags int) (*os.File, error) {
+	var tablePathBuilder strings.Builder
+	tablePathBuilder.WriteString(state.CurrentDB)
+	tablePathBuilder.WriteString("/")
+	tablePathBuilder.WriteString(tableName)
+
+	tablePath := tablePathBuilder.String()
+
+	// open file with mode flags, unix perm bits set to 0777
+	tableFile, err := os.OpenFile(tablePath, flags, 0777)
+	if err != nil {
+		return nil, fmt.Errorf("!Failed to select from table %v because it does not exist.", tableName)
+	}
+
+	return tableFile, nil
+}
+
+// Convert mapping of column names -> column types to a formatted string.
+func ColumnsToString(columns []metatypes.Column) string {
+	var tableTypesStringBuilder strings.Builder
+	var columnString string
+
+	for idx, column := range columns {
+		columnString = fmt.Sprintf("%v %v", column.Name, column.Type.ToString())
+		tableTypesStringBuilder.WriteString(columnString)
+
+		if idx < len(columns) - 1 {
+			tableTypesStringBuilder.WriteString(", ")
+		}
+	}
+
+	return tableTypesStringBuilder.String()
 }

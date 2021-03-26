@@ -50,7 +50,8 @@ type DropTableStatement struct {
 
 type SelectStatement struct {
 	TableName string
-	Columns string
+	ColumnNames []string
+	WhereClause *WhereClause
 }
 
 type AlterStatement struct {
@@ -116,7 +117,7 @@ func (statement DropDBStatement) Execute(state *metatypes.DBState) error {
 // Executes `DROP TABLE <table_name>;` query. Assumes that the table being
 // deleted is in the current database stored in DBState.
 func (statement DropTableStatement) Execute(state *metatypes.DBState) error {
-	tablePath, exists := tableExists(state, statement.TableName)
+	tablePath, exists := utils.TableExists(state, statement.TableName)
 
 	if !exists {
 		return fmt.Errorf("!Failed to delete %v because it does not exist.", statement.TableName)
@@ -147,7 +148,7 @@ func (statement UseDBStatement) Execute(state *metatypes.DBState) error {
 
 // Executes `CREATE TABLE <table_name> (<table_columns>);` queries.
 func (statement CreateTableStatement) Execute(state *metatypes.DBState) error {
-	tablePath, exists := tableExists(state, statement.TableName)
+	tablePath, exists := utils.TableExists(state, statement.TableName)
 
 	if exists {
 		return fmt.Errorf("!Failed to create table %v because it already exists.", statement.TableName)
@@ -158,7 +159,7 @@ func (statement CreateTableStatement) Execute(state *metatypes.DBState) error {
 		return fmt.Errorf("!Failed to create table %v because it already exists.", statement.TableName)
 	}
 
-	tableTypesString := columnsToString(statement.Columns)
+	tableTypesString := utils.ColumnsToString(statement.Columns)
 	tableFile.WriteString(tableTypesString)
 	tableFile.WriteString("\n")
 
@@ -169,20 +170,30 @@ func (statement CreateTableStatement) Execute(state *metatypes.DBState) error {
 // Executes `SELECT <columns> FROM <table_name>;` queries. Currently only
 // supports querying from every column via <columns> = `*`.
 func (statement SelectStatement) Execute(state *metatypes.DBState) error {
-	tableFile, err := openTable(state, statement.TableName, os.O_RDONLY)
+	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_RDONLY)
 	defer tableFile.Close()
 	if err != nil {
 		return fmt.Errorf("!Failed to select from table %v because it does not exist.", statement.TableName)
 	}
 
-	// Tables are guaranteed to be empty, only need to read columns as header
+	var outputBuilder strings.Builder
+
 	tableReader := bufio.NewReader(tableFile)
-	columns, err := tableReader.ReadString('\n')
+	tableHeader, err := tableReader.ReadString('\n')
 	if err != nil {
 		return err
 	}
+	outputBuilder.WriteString(tableHeader)
 
-	fmt.Println(columns)
+	for {
+		row, err := tableReader.ReadString('\n')
+		if err != nil {
+			break
+		}
+		outputBuilder.WriteString(row)
+	}
+
+	fmt.Println(outputBuilder.String())
 	return nil
 }
 
@@ -194,7 +205,7 @@ func (statement Comment) Execute(state *metatypes.DBState) error {
 // Executes `ALTER TABLE <table_name> ADD <column_name> <column_type>;`
 // statements.
 func (statement AlterStatement) Execute(state *metatypes.DBState) error {
-	tableFile, err := openTable(state, statement.TableName, os.O_RDWR)
+	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_RDWR)
 	defer tableFile.Close()
 	if err != nil {
 		return fmt.Errorf(
@@ -238,7 +249,7 @@ func (statement AlterStatement) Execute(state *metatypes.DBState) error {
 }
 
 func (statement InsertStatement) Execute(state *metatypes.DBState) error {
-	tableFile, err := openTable(state, statement.TableName, os.O_APPEND|os.O_RDWR)
+	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_APPEND|os.O_RDWR)
 	defer tableFile.Close()
 	if err != nil {
 		return fmt.Errorf("!Failed to insert into table %v because it does not exist.", statement.TableName)
@@ -306,7 +317,7 @@ func (statement InsertStatement) Execute(state *metatypes.DBState) error {
 }
 
 func (statement UpdateStatement) Execute(state *metatypes.DBState) error {
-	tableFile, err := openTable(state, statement.TableName, os.O_RDONLY)
+	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_RDONLY)
 	if err != nil {
 		fmt.Println(err)
 		return fmt.Errorf("!Failed to insert into table %v because it does not exist.", statement.TableName)
@@ -360,7 +371,7 @@ func (statement UpdateStatement) Execute(state *metatypes.DBState) error {
 		if whereApplies(statement.WhereClause, colNames, rowValues) {
 
 			rowValues[colNames[statement.UpdatedCol]] = *statement.UpdatedValue
-			updatedRowString := valueListToString(rowValues)
+			updatedRowString := utils.ValueListToString(rowValues)
 			replaceStringBuilder.WriteString(updatedRowString)
 
 			updated += 1
@@ -371,7 +382,7 @@ func (statement UpdateStatement) Execute(state *metatypes.DBState) error {
 
 	// need to close file before reopening to truncate
 	tableFile.Close()
-	tableFile, err = openTable(state, statement.TableName, os.O_WRONLY|os.O_TRUNC)
+	tableFile, err = utils.OpenTable(state, statement.TableName, os.O_WRONLY|os.O_TRUNC)
 	defer tableFile.Close()
 
 	replacedTable := replaceStringBuilder.String()
@@ -382,59 +393,7 @@ func (statement UpdateStatement) Execute(state *metatypes.DBState) error {
 	return nil
 }
 
-// Private utility function to convert map representing column names to column
-// types to a formatted string.
-func columnsToString(columns []metatypes.Column) string {
-	var tableTypesStringBuilder strings.Builder
-	var columnString string
-
-	for idx, column := range columns {
-		columnString = fmt.Sprintf("%v %v", column.Name, column.Type.ToString())
-		tableTypesStringBuilder.WriteString(columnString)
-
-		if idx < len(columns) - 1 {
-			tableTypesStringBuilder.WriteString(", ")
-		}
-	}
-
-	return tableTypesStringBuilder.String()
-}
-
-// Private utility function, opens table file based on current DBState and given
-// table name.
-func openTable(state *metatypes.DBState, tableName string, flags int) (*os.File, error) {
-	var tablePathBuilder strings.Builder
-	tablePathBuilder.WriteString(state.CurrentDB)
-	tablePathBuilder.WriteString("/")
-	tablePathBuilder.WriteString(tableName)
-
-	tablePath := tablePathBuilder.String()
-
-	// open file with mode flags, unix perm bits set to 0777
-	tableFile, err := os.OpenFile(tablePath, flags, 0777)
-	if err != nil {
-		return nil, fmt.Errorf("!Failed to select from table %v because it does not exist.", tableName)
-	}
-
-	return tableFile, nil
-}
-
-// Private utility function, determines if table exists given current DBState
-// and given table name. Return table path and boolean representing existence of
-// table.
-func tableExists(state *metatypes.DBState, tableName string) (string, bool) {
-	var tablePathBuilder strings.Builder
-	tablePathBuilder.WriteString(state.CurrentDB)
-	tablePathBuilder.WriteString("/")
-	tablePathBuilder.WriteString(tableName)
-
-	tablePath := tablePathBuilder.String()
-
-	_, err := os.Stat(tablePath)
-
-	return tablePath, err == nil
-}
-
+// Determines if `where` clause applies to row
 func whereApplies(where *WhereClause, colNames map[string]int, row []metatypes.Value) bool {
 	if where == nil {
 		return true
@@ -459,17 +418,4 @@ func whereApplies(where *WhereClause, colNames map[string]int, row []metatypes.V
 	}
 
 	return false
-}
-
-func valueListToString(list []metatypes.Value) string {
-	var stringBuilder strings.Builder
-	for idx, val := range list {
-		stringBuilder.WriteString(val.ToString())
-		if idx < len(list) - 1 {
-			stringBuilder.WriteString(", ")
-		}
-	}
-	stringBuilder.WriteString("\n")
-
-	return stringBuilder.String()
 }
