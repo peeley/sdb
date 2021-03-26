@@ -7,6 +7,7 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"sdb/types/metatypes"
 	"strconv"
@@ -291,4 +292,63 @@ func ColumnsToString(columns []metatypes.Column) string {
 	}
 
 	return tableTypesStringBuilder.String()
+}
+
+func TableHeaderToColMap(header string) map[string]int {
+	colMap := make(map[string]int)
+	idx := 0
+	var ok bool
+	for {
+		if header == "" {
+			break
+		}
+
+		colName := ParseIdentifier(header)
+		header, _ = HasPrefix(header, colName)
+
+		typeName, _ := ParseType(header)
+		colMap[colName] = idx
+
+		header, _ = HasPrefix(header, typeName.ToString())
+		header, ok = HasPrefix(header, ",")
+		if !ok {
+			break
+		}
+		idx += 1
+	}
+
+	return colMap
+}
+
+// Function to parse <table_columns> into map of column name -> column type.
+func ParseColumnList(input string) ([]metatypes.Column, error) {
+	trimmed := input
+	var cols []metatypes.Column
+	var ok bool
+	for {
+		trimmed = strings.TrimSpace(trimmed)
+		ident := ParseIdentifier(trimmed)
+		trimmed, ok = HasPrefix(trimmed, ident)
+		colType, err := ParseType(trimmed)
+		if err != nil {
+			return nil, err
+		}
+		trimmed, _ = HasPrefix(trimmed, colType.ToString())
+
+		cols = append(cols, metatypes.Column{
+			Name: ident,
+			Type: colType,
+		})
+
+		trimmed, ok = HasPrefix(trimmed, ",")
+		if !ok {
+			break
+		}
+	}
+
+	if len(cols) < 1 {
+		return nil, errors.New("Empty column list for CREATE statement.")
+	}
+
+	return cols, nil
 }

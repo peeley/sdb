@@ -8,11 +8,8 @@ package parser
 
 import (
 	"errors"
-	"fmt"
 	"sdb/types"
-	"sdb/types/metatypes"
 	"sdb/utils"
-	"strings"
 )
 
 // Parses `CREATE TABLE <table_name> (<table_columns>);` input.
@@ -28,13 +25,31 @@ func ParseCreateTableStatement(input string) (types.Statement, error){
 		return nil, errors.New("Missing table name.")
 	}
 
-	trimmed = strings.TrimPrefix(trimmed, tableName)
-	trimmed = strings.TrimSpace(trimmed)
+	trimmed, _ = utils.HasPrefix(trimmed, tableName)
+	trimmed, ok = utils.HasPrefix(trimmed, "(")
+	if !ok {
+		return nil, errors.New(
+			"Expected '(' after table name in CREATE statement.",
+		)
+	}
 
-	colList, err := parseColumnList(trimmed)
+	colList, err := utils.ParseColumnList(trimmed)
 
 	if err != nil {
 		return nil, err
+	}
+
+	if len(colList) < 1 {
+		return nil, errors.New("Empty column list for CREATE statement.")
+	}
+
+	trimmed, ok = utils.HasPrefix(trimmed, utils.ColumnsToString(colList))
+
+	trimmed, ok = utils.HasPrefix(trimmed, ")")
+	if !ok {
+		return nil, errors.New(
+			"Expected ')' after column types in CREATE statement.",
+		)
 	}
 
 	statement := types.CreateTableStatement{
@@ -59,48 +74,4 @@ func ParseCreateDBStatement(input string) (types.Statement, error) {
 	}
 
 	return createDB, nil
-}
-
-
-// Private utility function to parse <table_columns> into map of
-// column name -> column type.
-func parseColumnList(input string) ([]metatypes.Column, error) {
-	trimmed, ok := utils.HasPrefix(input, "(")
-	if !ok {
-		return nil, errors.New(
-			"Expected '(' after table name in CREATE statement.",
-		)
-	}
-
-	var cols []metatypes.Column
-
-	for {
-		trimmed = strings.TrimSpace(trimmed)
-		ident := utils.ParseIdentifier(trimmed)
-		trimmed = strings.TrimPrefix(trimmed, ident)
-
-		trimmed = strings.TrimSpace(trimmed)
-		colType, err := utils.ParseType(trimmed)
-		if err != nil {
-			return nil, err
-		}
-		trimmed = strings.TrimPrefix(trimmed, colType.ToString())
-
-		cols = append(cols, metatypes.Column{ ident, colType })
-		trimmed = strings.TrimSpace(trimmed)
-
-		if trimmed[0] == ')' {
-			break
-		} else if trimmed[0] != ',' {
-			return nil, fmt.Errorf("Expected ',' at end of column %v.", trimmed)
-		}
-
-		trimmed = strings.TrimPrefix(trimmed, ",")
-	}
-
-	if len(cols) < 1 {
-		return nil, errors.New("Empty column list for CREATE statement.")
-	}
-
-	return cols, nil
 }

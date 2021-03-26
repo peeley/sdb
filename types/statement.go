@@ -167,8 +167,7 @@ func (statement CreateTableStatement) Execute(state *metatypes.DBState) error {
 	return nil
 }
 
-// Executes `SELECT <columns> FROM <table_name>;` queries. Currently only
-// supports querying from every column via <columns> = `*`.
+// Executes `SELECT <columns> FROM <table_name> [WHERE <condition>];` queries.
 func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_RDONLY)
 	defer tableFile.Close()
@@ -183,14 +182,61 @@ func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 	if err != nil {
 		return err
 	}
-	outputBuilder.WriteString(tableHeader)
 
+	// write names of selected columns into output
+	tableColumns, err := utils.ParseColumnList(tableHeader)
+	if err != nil {
+		return err
+	}
+	if statement.ColumnNames[0] == "*" {
+		outputBuilder.WriteString(tableHeader)
+	} else {
+		for statementColumnsIdx, statementColumnName := range statement.ColumnNames {
+			for _, tableColumn := range tableColumns {
+				if tableColumn.Name == statementColumnName {
+
+					outputBuilder.WriteString(tableColumn.Name)
+					outputBuilder.WriteString(" ")
+					outputBuilder.WriteString(tableColumn.Type.ToString())
+
+					if statementColumnsIdx < len(statement.ColumnNames) - 1 {
+						outputBuilder.WriteString(", ")
+					}
+				}
+			}
+		}
+		outputBuilder.WriteString("\n")
+	}
+
+	colMap := utils.TableHeaderToColMap(tableHeader)
+	var rowStringBuilder strings.Builder
+
+	// filter out rows according to `where`, write to output
 	for {
 		row, err := tableReader.ReadString('\n')
 		if err != nil {
 			break
 		}
-		outputBuilder.WriteString(row)
+
+		rowValues, _, _ := utils.ParseValueList(row)
+		if whereApplies(statement.WhereClause, colMap, rowValues) {
+			if statement.ColumnNames[0] == "*" {
+				outputBuilder.WriteString(row)
+			} else {
+				// filter out selected columns
+				for colNameIdx, colName := range statement.ColumnNames {
+					selectedValue := rowValues[colMap[colName]]
+					rowStringBuilder.WriteString(selectedValue.ToString())
+					if colNameIdx < len(statement.ColumnNames) - 1 {
+						rowStringBuilder.WriteString(", ")
+					}
+				}
+				rowStringBuilder.WriteString("\n")
+			}
+
+			outputBuilder.WriteString(rowStringBuilder.String())
+		}
+		rowStringBuilder.Reset()
 	}
 
 	fmt.Println(outputBuilder.String())
@@ -311,7 +357,7 @@ func (statement InsertStatement) Execute(state *metatypes.DBState) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Inserted `%v` into %v\n", strings.TrimSpace(rowString), statement.TableName)
+	fmt.Printf("Inserted {%v} into %v\n", strings.TrimSpace(rowString), statement.TableName)
 
 	return nil
 }
@@ -330,31 +376,7 @@ func (statement UpdateStatement) Execute(state *metatypes.DBState) error {
 		return fmt.Errorf("!Failed to read from table file %v.", statement.TableName)
 	}
 
-	colNames := make(map[string]int)
-	idx := 0
-	trimmed := tableHeader
-	var ok bool
-	for {
-		if trimmed == "" {
-			break
-		}
-
-		colName := utils.ParseIdentifier(trimmed)
-		trimmed, _ = utils.HasPrefix(trimmed, colName)
-
-		typeName, err := utils.ParseType(trimmed)
-		if err != nil {
-			return err
-		}
-		colNames[colName] = idx
-
-		trimmed, _ = utils.HasPrefix(trimmed, typeName.ToString())
-		trimmed, ok = utils.HasPrefix(trimmed, ",")
-		if !ok {
-			break
-		}
-		idx += 1
-	}
+	colNames := utils.TableHeaderToColMap(tableHeader)
 
 	var replaceStringBuilder strings.Builder
 	replaceStringBuilder.WriteString(tableHeader)

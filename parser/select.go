@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"sdb/types"
 	"sdb/utils"
-	"strings"
 )
 
 // Parses `SELECT` input.
@@ -20,13 +19,21 @@ func ParseSelectStatement(input string) (types.Statement, error) {
 		return nil, nil
 	}
 
-	// FIXME add support to select cols by name
-	if trimmed[0] != '*' {
-		return nil, fmt.Errorf("Expected `SELECT` followed by `*`")
-	}
+	colNames := []string{}
+	for {
+		ident := utils.ParseIdentifier(trimmed)
+		trimmed, _ = utils.HasPrefix(trimmed, ident)
 
-	trimmed = strings.TrimPrefix(trimmed, "*")
-	trimmed = strings.TrimSpace(trimmed)
+		colNames = append(colNames, ident)
+		if ident == "*" {
+			break
+		}
+
+		trimmed, ok = utils.HasPrefix(trimmed, ",")
+		if !ok {
+			break
+		}
+	}
 
 	trimmed, ok = utils.HasPrefix(trimmed, "from")
 	if !ok {
@@ -34,11 +41,14 @@ func ParseSelectStatement(input string) (types.Statement, error) {
 	}
 
 	tableName := utils.ParseIdentifier(trimmed)
+	trimmed, _ = utils.HasPrefix(trimmed, tableName)
+
+	where, _ := ParseWhereClause(trimmed)
 
 	statement := types.SelectStatement {
 		TableName: tableName,
-		ColumnNames: []string{"*"},
-		WhereClause: nil,
+		ColumnNames: colNames,
+		WhereClause: where,
 	}
 
 	return statement, nil
