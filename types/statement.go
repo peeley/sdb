@@ -41,7 +41,7 @@ type UseDBStatement struct {
 
 type CreateTableStatement struct {
 	TableName string
-	Columns map[string]metatypes.Type
+	Columns []metatypes.Column
 }
 
 type DropTableStatement struct {
@@ -62,6 +62,19 @@ type AlterStatement struct {
 type InsertStatement struct {
 	TableName string
 	Values []metatypes.Value
+}
+
+type UpdateStatement struct {
+	TableName string
+	UpdatedCol string
+	UpdatedValue *metatypes.Value
+	WhereClause *WhereClause
+}
+
+type WhereClause struct {
+	ColName string
+	Comparison string
+	ComparisonValue *metatypes.Value
 }
 
 // Comments are essentially no-ops, but still parsed and as such need to
@@ -238,7 +251,6 @@ func (statement InsertStatement) Execute(state *metatypes.DBState) error {
 		return fmt.Errorf("!Failed to read from table file %v.", statement.TableName)
 	}
 
-	fmt.Println("table header:", tableHeader)
 	var tableTypes []metatypes.Type
 	var ok bool
 	for {
@@ -293,21 +305,96 @@ func (statement InsertStatement) Execute(state *metatypes.DBState) error {
 	return nil
 }
 
-// Private utility function to convert map representing column names to column
-// types to a formatted string.
-func columnsToString(columns map[string]metatypes.Type) string {
-	var tableTypesStringBuilder strings.Builder
+func (statement UpdateStatement) Execute(state *metatypes.DBState) error {
+	tableFile, err := openTable(state, statement.TableName, os.O_RDONLY)
+	if err != nil {
+		fmt.Println(err)
+		return fmt.Errorf("!Failed to insert into table %v because it does not exist.", statement.TableName)
+	}
+	defer tableFile.Close()
+
+	reader := bufio.NewReader(tableFile)
+	tableHeader, err := reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("!Failed to read from table file %v.", statement.TableName)
+	}
+
+	colNames := make(map[string]int)
 	idx := 0
+	trimmed := tableHeader
+	var ok bool
+	for {
+		if trimmed == "" {
+			break
+		}
 
-	for columnName, columnType := range columns {
-		columnString := fmt.Sprintf("%v %v", columnName, columnType.ToString())
+		colName := utils.ParseIdentifier(trimmed)
+		trimmed, _ = utils.HasPrefix(trimmed, colName)
 
-		if idx < len(columns) - 1 {
-			columnString = fmt.Sprintf("%v, ", columnString)
+		typeName, err := utils.ParseType(trimmed)
+		if err != nil {
+			return err
+		}
+		colNames[colName] = idx
+
+		trimmed, _ = utils.HasPrefix(trimmed, typeName.ToString())
+		trimmed, ok = utils.HasPrefix(trimmed, ",")
+		if !ok {
+			break
 		}
 		idx += 1
+	}
 
+	var replaceStringBuilder strings.Builder
+	replaceStringBuilder.WriteString(tableHeader)
+
+	updated := 0
+
+	for {
+		row, err := reader.ReadString('\n')
+		if err != nil {
+			break
+		}
+
+		rowValues, _, _ := utils.ParseValueList(row)
+		if whereApplies(statement.WhereClause, colNames, rowValues) {
+
+			rowValues[colNames[statement.UpdatedCol]] = *statement.UpdatedValue
+			updatedRowString := valueListToString(rowValues)
+			replaceStringBuilder.WriteString(updatedRowString)
+
+			updated += 1
+		} else {
+			replaceStringBuilder.WriteString(row)
+		}
+	}
+
+	// need to close file before reopening to truncate
+	tableFile.Close()
+	tableFile, err = openTable(state, statement.TableName, os.O_WRONLY|os.O_TRUNC)
+	defer tableFile.Close()
+
+	replacedTable := replaceStringBuilder.String()
+	tableFile.WriteString(replacedTable)
+
+	fmt.Printf("Updated %v rows.\n", updated)
+
+	return nil
+}
+
+// Private utility function to convert map representing column names to column
+// types to a formatted string.
+func columnsToString(columns []metatypes.Column) string {
+	var tableTypesStringBuilder strings.Builder
+	var columnString string
+
+	for idx, column := range columns {
+		columnString = fmt.Sprintf("%v %v", column.Name, column.Type.ToString())
 		tableTypesStringBuilder.WriteString(columnString)
+
+		if idx < len(columns) - 1 {
+			tableTypesStringBuilder.WriteString(", ")
+		}
 	}
 
 	return tableTypesStringBuilder.String()
@@ -346,4 +433,43 @@ func tableExists(state *metatypes.DBState, tableName string) (string, bool) {
 	_, err := os.Stat(tablePath)
 
 	return tablePath, err == nil
+}
+
+func whereApplies(where *WhereClause, colNames map[string]int, row []metatypes.Value) bool {
+	if where == nil {
+		return true
+	}
+	colIndex := colNames[where.ColName]
+
+	rowValue := row[colIndex]
+
+	// FIXME might want to check if types match before comparison
+	if where.Comparison == "=" {
+		return rowValue.GetValue() == where.ComparisonValue.GetValue()
+	} else if where.Comparison == "!=" {
+		return rowValue.GetValue() != where.ComparisonValue.GetValue()
+	} else if where.Comparison == "<" { // assuming numerical types for less/greater than
+		return rowValue.GetValue().(float64) < where.ComparisonValue.GetValue().(float64)
+	} else if where.Comparison == "<=" {
+		return rowValue.GetValue().(float64) <= where.ComparisonValue.GetValue().(float64)
+	} else if where.Comparison == ">" {
+		return rowValue.GetValue().(float64) > where.ComparisonValue.GetValue().(float64)
+	} else if where.Comparison == ">=" {
+		return rowValue.GetValue().(float64) >= where.ComparisonValue.GetValue().(float64)
+	}
+
+	return false
+}
+
+func valueListToString(list []metatypes.Value) string {
+	var stringBuilder strings.Builder
+	for idx, val := range list {
+		stringBuilder.WriteString(val.ToString())
+		if idx < len(list) - 1 {
+			stringBuilder.WriteString(", ")
+		}
+	}
+	stringBuilder.WriteString("\n")
+
+	return stringBuilder.String()
 }

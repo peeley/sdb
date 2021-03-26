@@ -61,9 +61,10 @@ func ParseCreateDBStatement(input string) (types.Statement, error) {
 	return createDB, nil
 }
 
+
 // Private utility function to parse <table_columns> into map of
 // column name -> column type.
-func parseColumnList(input string) (map[string]metatypes.Type, error) {
+func parseColumnList(input string) ([]metatypes.Column, error) {
 	trimmed, ok := utils.HasPrefix(input, "(")
 	if !ok {
 		return nil, errors.New(
@@ -71,7 +72,7 @@ func parseColumnList(input string) (map[string]metatypes.Type, error) {
 		)
 	}
 
-	cols := make(map[string]metatypes.Type)
+	var cols []metatypes.Column
 
 	for {
 		trimmed = strings.TrimSpace(trimmed)
@@ -79,13 +80,13 @@ func parseColumnList(input string) (map[string]metatypes.Type, error) {
 		trimmed = strings.TrimPrefix(trimmed, ident)
 
 		trimmed = strings.TrimSpace(trimmed)
-		typeName, err := utils.ParseType(trimmed)
+		colType, err := utils.ParseType(trimmed)
 		if err != nil {
 			return nil, err
 		}
-		trimmed = strings.TrimPrefix(trimmed, typeName.ToString())
+		trimmed = strings.TrimPrefix(trimmed, colType.ToString())
 
-		cols[ident] = typeName
+		cols = append(cols, metatypes.Column{ ident, colType })
 		trimmed = strings.TrimSpace(trimmed)
 
 		if trimmed[0] == ')' {

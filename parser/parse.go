@@ -91,5 +91,13 @@ func Parse(input string) (types.Statement, error) {
 		return insert, nil
 	}
 
+	update, err := ParseUpdateStatement(input)
+
+	if err != nil {
+		return nil, err
+	} else if update != nil {
+		return update, nil
+	}
+
 	return nil, errors.New("!Syntax error.")
 }

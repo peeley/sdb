@@ -49,6 +49,11 @@ func NewType(typename string, size int) Type {
 	return nil
 }
 
+type Column struct {
+	Name string
+	Type Type
+}
+
 type Value struct {
 	Value interface{}
 	Type Type
