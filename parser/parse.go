@@ -99,5 +99,13 @@ func Parse(input string) (types.Statement, error) {
 		return update, nil
 	}
 
+	delete, err := ParseDeleteStatement(input)
+
+	if err != nil {
+		return nil, err
+	} else if delete != nil {
+		return delete, nil
+	}
+
 	return nil, errors.New("!Syntax error.")
 }

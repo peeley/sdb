@@ -96,7 +96,9 @@ func (v *Value) TypeMatches(t *Type) bool {
 }
 
 func (v *Value) ToString() string {
-	if v.Type.ToString() == "float" || v.Type.ToString() == "int" {
+	if v.Type.ToString() == "float" {
+		return fmt.Sprintf("%v", v.Value)
+	} else if v.Type.ToString() == "int" {
 		return fmt.Sprintf("%v", v.Value)
 	}
 	// otherwise, value is a string of some kind

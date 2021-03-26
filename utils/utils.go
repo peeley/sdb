@@ -7,7 +7,6 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"sdb/types/metatypes"
 	"strconv"
@@ -131,7 +130,7 @@ func ParseInt(input string) (*metatypes.Value, error) {
 		return nil, nil
 	}
 
-	integer, err := strconv.Atoi(integerString)
+	integer, err := strconv.ParseFloat(integerString, 32)
 
 	if err != nil {
 		return nil, err
@@ -344,10 +343,6 @@ func ParseColumnList(input string) ([]metatypes.Column, error) {
 		if !ok {
 			break
 		}
-	}
-
-	if len(cols) < 1 {
-		return nil, errors.New("Empty column list for CREATE statement.")
 	}
 
 	return cols, nil
