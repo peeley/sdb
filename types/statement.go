@@ -51,6 +51,7 @@ type DropTableStatement struct {
 type SelectStatement struct {
 	TableName string
 	ColumnNames []string
+	JoinClause *JoinClause
 	WhereClause *WhereClause
 }
 
@@ -81,6 +82,22 @@ type WhereClause struct {
 	ColName string
 	Comparison string
 	ComparisonValue *metatypes.Value
+}
+
+type JoinType string
+
+const(
+	InnerJoin = "inner"
+	LeftOuterJoin = "left"
+	RightOuterJoin = "right"
+)
+type JoinClause struct {
+	JoinType JoinType
+	LeftTableName string
+	RightTableName string
+	LeftTableColumn string
+	RightTableColumn string
+	JoinCondition string
 }
 
 // Comments are essentially no-ops, but still parsed and as such need to
