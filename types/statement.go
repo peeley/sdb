@@ -95,11 +95,10 @@ type JoinClause struct {
 	JoinType JoinType
 	LeftTable string
 	LeftTableAlias string
+	LeftTableColumn string
 	RightTable string
 	RightTableAlias string
-	LeftTableColumn string
 	RightTableColumn string
-	JoinCondition string
 }
 
 // Comments are essentially no-ops, but still parsed and as such need to
