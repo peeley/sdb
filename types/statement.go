@@ -85,16 +85,18 @@ type WhereClause struct {
 }
 
 type JoinType string
-
-const(
-	InnerJoin = "inner"
-	LeftOuterJoin = "left"
-	RightOuterJoin = "right"
+const (
+	InnerJoin = "inner join"
+	LeftOuterJoin = "left outer join"
+	RightOuterJoin = "right outer join"
 )
+
 type JoinClause struct {
 	JoinType JoinType
-	LeftTableName string
-	RightTableName string
+	LeftTable string
+	LeftTableAlias string
+	RightTable string
+	RightTableAlias string
 	LeftTableColumn string
 	RightTableColumn string
 	JoinCondition string

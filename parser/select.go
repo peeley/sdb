@@ -45,10 +45,17 @@ func ParseSelectStatement(input string) (types.Statement, error) {
 
 	where, _ := ParseWhereClause(trimmed)
 
+	var joinClause *types.JoinClause
+	if where == nil {
+		joinClause, _ = ParseJoinClause(trimmed, tableName)
+	}
+
+
 	statement := types.SelectStatement {
 		TableName: tableName,
 		ColumnNames: colNames,
 		WhereClause: where,
+		JoinClause: joinClause,
 	}
 
 	return statement, nil
