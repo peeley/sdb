@@ -1,3 +1,19 @@
+// Noah Snelson
+// April 13, 2021
+// sdb/parser/join.go
+//
+// Parses clause that joins table to another in `SELECT` statement. The join
+// clause itself can take several forms, as either:
+// SELECT * FROM
+// 		TABLE1 T1, TABLE2 T2
+// 		WHERE T1.col1 = T2.col2;
+// which represents an inner join between TABLE1 and TABLE2 on col1 and col2,
+// or:
+// SELECT * FROM TABLE1 T1 <JOIN TYPE> TABLE2 T2 on T1.col1 = T2.col2;
+// and <JOIN TYPE> is either `inner join`, `left outer join`, or `right outer
+// join` for each respective join type between TABLE1 and TABLE2 on col1 and
+// col2.
+
 package parser
 
 import (

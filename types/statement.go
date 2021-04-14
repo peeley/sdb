@@ -221,6 +221,7 @@ func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 		return err
 	}
 
+	// need to forward declare variables used in JOINs
 	var joinTableColMap map[string]int
 	var joinTableRows [][]metatypes.Value
 	if statement.JoinClause != nil {
@@ -237,6 +238,7 @@ func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 			joinTableRows = append(joinTableRows, joinRowValues)
 		}
 
+		// add joined columns to header
 		var builder strings.Builder
 		builder.WriteString(strings.TrimSpace(tableHeader))
 		builder.WriteString(", ")
@@ -268,7 +270,7 @@ func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 	colMap := utils.TableHeaderToColMap(tableHeader)
 	var rowStringBuilder strings.Builder
 
-	// filter out rows according to `where`, write to output
+	// iterate through all rows/lines of the table file and process as necessary
 	for {
 		row, err := tableReader.ReadString('\n')
 		if err != nil {
@@ -276,7 +278,9 @@ func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 		}
 
 		rowValues, _, _ := utils.ParseValueList(row)
+
 		if statement.JoinClause != nil {
+			// this join row to the joining table's matching row
 			joined := applyJoin(*statement.JoinClause, colMap, joinTableColMap, joinTableRows, rowValues)
 			if joined == "" {
 				continue
@@ -284,6 +288,8 @@ func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 				row = joined
 			}
 		}
+
+		// filter out rows according to `where`
 		if whereApplies(statement.WhereClause, colMap, rowValues) {
 			if statement.ColumnNames[0] == "*" {
 				outputBuilder.WriteString(row)
@@ -554,21 +560,32 @@ func whereApplies(where *WhereClause, colNames map[string]int, row []metatypes.V
 	return false
 }
 
+// Determines if a row in the 'left' table should be joined to any rows from the
+// 'right' table. Assumes that tables are being joined on an equality
+// comparison between the joining columns.
 func applyJoin(joinClause JoinClause, colNames map[string]int, joinColNames map[string]int, joinRows [][]metatypes.Value, row []metatypes.Value) string {
+	var joinedRowsBuilder strings.Builder
 	for _, joinRow := range joinRows {
 		leftColIdx := colNames[joinClause.LeftTableColumn]
 		rightColIdx := joinColNames[joinClause.RightTableColumn]
 
-		if row[leftColIdx] == joinRow[rightColIdx] || joinClause.JoinType == LeftOuterJoin {
-			var joinedRowBuilder strings.Builder
+		var matchingRowBuilder strings.Builder
+		if row[leftColIdx] == joinRow[rightColIdx] {
 
-			joinedRowBuilder.WriteString(strings.TrimSpace(utils.ValueListToString(row)))
-			joinedRowBuilder.WriteString(", ")
-			joinedRowBuilder.WriteString(utils.ValueListToString(joinRow))
+			matchingRowBuilder.WriteString(strings.TrimSpace(utils.ValueListToString(row)))
+			matchingRowBuilder.WriteString(", ")
+			matchingRowBuilder.WriteString(utils.ValueListToString(joinRow))
 
-			return joinedRowBuilder.String()
+			joinedRowsBuilder.WriteString(matchingRowBuilder.String())
+			matchingRowBuilder.Reset()
 		}
 	}
 
-	return ""
+	joinedRows := joinedRowsBuilder.String()
+
+	if joinedRows == "" && joinClause.JoinType == LeftOuterJoin {
+		return utils.ValueListToString(row)
+	}
+
+	return joinedRows
 }
