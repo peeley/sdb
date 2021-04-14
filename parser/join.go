@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"sdb/types"
 	"sdb/utils"
 	"strings"
@@ -10,6 +9,9 @@ import (
 func ParseJoinClause(input, leftTableName string) (*types.JoinClause, error) {
 	leftTableAlias := utils.ParseIdentifier(input)
 	trimmed, _ := utils.HasPrefix(input, leftTableAlias)
+	if leftTableAlias == "" || trimmed == "" {
+		return nil, nil
+	}
 
 	var joinType types.JoinType
 	if strings.HasPrefix(trimmed, ",") {
@@ -24,6 +26,8 @@ func ParseJoinClause(input, leftTableName string) (*types.JoinClause, error) {
 	} else if strings.HasPrefix(trimmed, "right outer join") {
 		joinType = types.RightOuterJoin
 		trimmed, _ = utils.HasPrefix(trimmed, "right outer join")
+	} else {
+		return nil, nil
 	}
 
 	rightTableName := utils.ParseIdentifier(trimmed)
@@ -58,8 +62,6 @@ func ParseJoinClause(input, leftTableName string) (*types.JoinClause, error) {
 		RightTableAlias: rightTableAlias,
 		RightTableColumn: rightTableColumn,
 	}
-
-	fmt.Println(joinClause)
 
 	return joinClause, nil
 }

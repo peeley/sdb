@@ -198,6 +198,15 @@ func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 		return fmt.Errorf("!Failed to select from table %v because it does not exist.", statement.TableName)
 	}
 
+	var joinTableFile *os.File
+	if statement.JoinClause != nil {
+		joinTableFile, err = utils.OpenTable(state, statement.JoinClause.RightTable, os.O_RDONLY)
+		defer joinTableFile.Close()
+		if err != nil {
+			return fmt.Errorf("!Failed to select from table %v because it does not exist.", statement.JoinClause.RightTable)
+		}
+	}
+
 	var outputBuilder strings.Builder
 
 	tableReader := bufio.NewReader(tableFile)
@@ -211,6 +220,31 @@ func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 	if err != nil {
 		return err
 	}
+
+	var joinTableColMap map[string]int
+	var joinTableRows [][]metatypes.Value
+	if statement.JoinClause != nil {
+		joinTableReader := bufio.NewReader(joinTableFile)
+		joinTableHeader, _ := joinTableReader.ReadString('\n')
+		joinTableColMap = utils.TableHeaderToColMap(joinTableHeader)
+
+		for {
+			joinRow, err := joinTableReader.ReadString('\n')
+			if err != nil {
+				break
+			}
+			joinRowValues, _, _ := utils.ParseValueList(joinRow)
+			joinTableRows = append(joinTableRows, joinRowValues)
+		}
+
+		var builder strings.Builder
+		builder.WriteString(strings.TrimSpace(tableHeader))
+		builder.WriteString(", ")
+		builder.WriteString(joinTableHeader)
+
+		tableHeader = builder.String()
+	}
+
 	if statement.ColumnNames[0] == "*" {
 		outputBuilder.WriteString(tableHeader)
 	} else {
@@ -242,6 +276,14 @@ func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 		}
 
 		rowValues, _, _ := utils.ParseValueList(row)
+		if statement.JoinClause != nil {
+			joined := applyJoin(*statement.JoinClause, colMap, joinTableColMap, joinTableRows, rowValues)
+			if joined == "" {
+				continue
+			} else {
+				row = joined
+			}
+		}
 		if whereApplies(statement.WhereClause, colMap, rowValues) {
 			if statement.ColumnNames[0] == "*" {
 				outputBuilder.WriteString(row)
@@ -510,4 +552,23 @@ func whereApplies(where *WhereClause, colNames map[string]int, row []metatypes.V
 	}
 
 	return false
+}
+
+func applyJoin(joinClause JoinClause, colNames map[string]int, joinColNames map[string]int, joinRows [][]metatypes.Value, row []metatypes.Value) string {
+	for _, joinRow := range joinRows {
+		leftColIdx := colNames[joinClause.LeftTableColumn]
+		rightColIdx := joinColNames[joinClause.RightTableColumn]
+
+		if row[leftColIdx] == joinRow[rightColIdx] || joinClause.JoinType == LeftOuterJoin {
+			var joinedRowBuilder strings.Builder
+
+			joinedRowBuilder.WriteString(strings.TrimSpace(utils.ValueListToString(row)))
+			joinedRowBuilder.WriteString(", ")
+			joinedRowBuilder.WriteString(utils.ValueListToString(joinRow))
+
+			return joinedRowBuilder.String()
+		}
+	}
+
+	return ""
 }
