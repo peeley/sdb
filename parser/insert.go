@@ -28,7 +28,7 @@ func ParseInsertStatement(input string) (types.Statement, error){
 		return nil, err
 	}
 
-	trimmed, ok = utils.HasPrefix(trimmed, ")")
+	_, ok = utils.HasPrefix(trimmed, ")")
 	if !ok {
 		return nil, fmt.Errorf("Expected list of values to end in ')'")
 	}

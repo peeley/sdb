@@ -24,7 +24,7 @@ func ParseAlterStatement(input string) (types.Statement, error) {
 	trimmed = strings.TrimPrefix(trimmed, tableName)
 	trimmed = strings.TrimSpace(trimmed)
 
-	trimmed, ok =utils.HasPrefix(input, "add")
+	trimmed, ok = utils.HasPrefix(trimmed, "add")
 	if !ok {
 		return nil, fmt.Errorf(
 			"Expected `ADD` after table name in `ALTER` statement.",

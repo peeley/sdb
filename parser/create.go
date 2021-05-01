@@ -43,7 +43,7 @@ func ParseCreateTableStatement(input string) (types.Statement, error){
 		return nil, errors.New("Empty column list for CREATE statement.")
 	}
 
-	trimmed, ok = utils.HasPrefix(trimmed, utils.ColumnsToString(colList))
+	trimmed, _ = utils.HasPrefix(trimmed, utils.ColumnsToString(colList))
 
 	trimmed, ok = utils.HasPrefix(trimmed, ")")
 	if !ok {

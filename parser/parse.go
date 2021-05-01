@@ -107,5 +107,21 @@ func Parse(input string) (types.Statement, error) {
 		return delete, nil
 	}
 
+	transaction, err := ParseBeginTransaction(input)
+
+	if err != nil {
+		return nil, err
+	} else if transaction != nil {
+		return transaction, nil
+	}
+
+	commit, err := ParseCommit(input)
+
+	if err != nil {
+		return nil, err
+	} else if commit != nil {
+		return commit, nil
+	}
+
 	return nil, errors.New("!Syntax error.")
 }

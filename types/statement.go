@@ -105,6 +105,11 @@ type JoinClause struct {
 // implement the `Statement interface`
 type Comment struct{}
 
+// Transactions don't necessarily hold any information, but are a Statement
+// nonetheless
+type BeginTransaction struct{}
+type Commit struct{}
+
 
 // --- `Statement` interface implementations -----------------------------------
 
@@ -193,18 +198,18 @@ func (statement CreateTableStatement) Execute(state *metatypes.DBState) error {
 // Executes `SELECT <columns> FROM <table_name> [WHERE <condition>];` queries.
 func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_RDONLY)
-	defer tableFile.Close()
 	if err != nil {
 		return fmt.Errorf("!Failed to select from table %v because it does not exist.", statement.TableName)
 	}
+	defer tableFile.Close()
 
 	var joinTableFile *os.File
 	if statement.JoinClause != nil {
 		joinTableFile, err = utils.OpenTable(state, statement.JoinClause.RightTable, os.O_RDONLY)
-		defer joinTableFile.Close()
 		if err != nil {
 			return fmt.Errorf("!Failed to select from table %v because it does not exist.", statement.JoinClause.RightTable)
 		}
+		defer joinTableFile.Close()
 	}
 
 	var outputBuilder strings.Builder
@@ -323,13 +328,13 @@ func (statement Comment) Execute(state *metatypes.DBState) error {
 // statements.
 func (statement AlterStatement) Execute(state *metatypes.DBState) error {
 	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_RDWR)
-	defer tableFile.Close()
 	if err != nil {
 		return fmt.Errorf(
 			"!Failed to alter table %v because it does not exist.",
 			statement.TableName,
 		)
 	}
+	defer tableFile.Close()
 
 	// read current header from table file
 	reader := bufio.NewReader(tableFile)
@@ -367,7 +372,6 @@ func (statement AlterStatement) Execute(state *metatypes.DBState) error {
 
 func (statement InsertStatement) Execute(state *metatypes.DBState) error {
 	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_APPEND|os.O_RDWR)
-	defer tableFile.Close()
 	if err != nil {
 		return fmt.Errorf("!Failed to insert into table %v because it does not exist.", statement.TableName)
 	}
@@ -476,6 +480,9 @@ func (statement UpdateStatement) Execute(state *metatypes.DBState) error {
 	// need to close file before reopening to truncate
 	tableFile.Close()
 	tableFile, err = utils.OpenTable(state, statement.TableName, os.O_WRONLY|os.O_TRUNC)
+	if err != nil {
+		return err;
+	}
 	defer tableFile.Close()
 
 	replacedTable := replaceStringBuilder.String()
@@ -524,6 +531,9 @@ func (statement DeleteStatment) Execute(state *metatypes.DBState) error {
 	// need to close file before reopening to truncate
 	tableFile.Close()
 	tableFile, err = utils.OpenTable(state, statement.TableName, os.O_WRONLY|os.O_TRUNC)
+	if err != nil {
+		return err;
+	}
 	defer tableFile.Close()
 
 	replacedTable := replaceStringBuilder.String()
@@ -531,6 +541,16 @@ func (statement DeleteStatment) Execute(state *metatypes.DBState) error {
 
 	fmt.Printf("Deleted %v rows.\n", deleted)
 	return nil
+}
+
+func (statement BeginTransaction) Execute(state *metatypes.DBState) error {
+	fmt.Printf("Beginning transaction!\n")
+	return nil;
+}
+
+func (statement Commit) Execute(state *metatypes.DBState) error {
+	fmt.Printf("Committing transaction!\n")
+	return nil;
 }
 
 // Determines if `where` clause applies to row

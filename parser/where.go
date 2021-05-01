@@ -26,9 +26,9 @@ func ParseWhereClause(input string) (*types.WhereClause, error) {
 	value, _ := utils.ParseValue(trimmed)
 
 	where := types.WhereClause {
-		colName,
-		comparison,
-		value,
+		ColName: colName,
+		Comparison: comparison,
+		ComparisonValue: value,
 	}
 
 	return &where, nil
