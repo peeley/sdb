@@ -41,55 +41,56 @@ type DropTableStatement struct {
 }
 
 type SelectStatement struct {
-	TableName string
+	TableName   string
 	ColumnNames []string
-	JoinClause *JoinClause
+	JoinClause  *JoinClause
 	WhereClause *WhereClause
 }
 
 type AlterStatement struct {
-	TableName string
+	TableName  string
 	ColumnName string
 	ColumnType db.Type
 }
 
 type InsertStatement struct {
 	TableName string
-	Values []db.Value
+	Values    []db.Value
 }
 
 type UpdateStatement struct {
-	TableName string
-	UpdatedCol string
+	TableName    string
+	UpdatedCol   string
 	UpdatedValue *db.Value
-	WhereClause *WhereClause
+	WhereClause  *WhereClause
 }
 
 type DeleteStatment struct {
-	TableName string
+	TableName   string
 	WhereClause *WhereClause
 }
 
 type WhereClause struct {
-	ColName string
-	Comparison string
+	ColName         string
+	Comparison      string
 	ComparisonValue *db.Value
 }
 
 type JoinType string
+
 const (
-	InnerJoin = "inner join"
-	LeftOuterJoin = "left outer join"
+	InnerJoin      = "inner join"
+	LeftOuterJoin  = "left outer join"
 	RightOuterJoin = "right outer join"
 )
 
 type JoinClause struct {
-	JoinType JoinType
-	LeftTable string
-	LeftTableAlias string
-	LeftTableColumn string
-	RightTable string
-	RightTableAlias string
+	JoinType         JoinType
+	LeftTable        string
+	LeftTableAlias   string
+	LeftTableColumn  string
+	RightTable       string
+	RightTableAlias  string
 	RightTableColumn string
 }
 
@@ -101,7 +102,6 @@ type Comment struct{}
 // nonetheless
 type BeginTransaction struct{}
 type Commit struct{}
-
 
 // --- `Statement` interface implementations -----------------------------------
 
@@ -219,7 +219,7 @@ func (statement SelectStatement) Execute(state *db.DBState) error {
 					outputBuilder.WriteString(" ")
 					outputBuilder.WriteString(tableColumn.Type.ToString())
 
-					if statementColumnsIdx < len(statement.ColumnNames) - 1 {
+					if statementColumnsIdx < len(statement.ColumnNames)-1 {
 						outputBuilder.WriteString(", ")
 					}
 				}
@@ -259,7 +259,7 @@ func (statement SelectStatement) Execute(state *db.DBState) error {
 				for colNameIdx, colName := range statement.ColumnNames {
 					selectedValue := rowValues[colMap[colName]]
 					rowStringBuilder.WriteString(selectedValue.ToString())
-					if colNameIdx < len(statement.ColumnNames) - 1 {
+					if colNameIdx < len(statement.ColumnNames)-1 {
 						rowStringBuilder.WriteString(", ")
 					}
 				}
@@ -437,7 +437,7 @@ func (statement UpdateStatement) Execute(state *db.DBState) error {
 	tableFile.Close()
 	tableFile, err = utils.OpenTable(state, statement.TableName, os.O_WRONLY|os.O_TRUNC)
 	if err != nil {
-		return err;
+		return err
 	}
 	defer tableFile.Close()
 
@@ -488,7 +488,7 @@ func (statement DeleteStatment) Execute(state *db.DBState) error {
 	tableFile.Close()
 	tableFile, err = utils.OpenTable(state, statement.TableName, os.O_WRONLY|os.O_TRUNC)
 	if err != nil {
-		return err;
+		return err
 	}
 	defer tableFile.Close()
 
@@ -501,12 +501,12 @@ func (statement DeleteStatment) Execute(state *db.DBState) error {
 
 func (statement BeginTransaction) Execute(state *db.DBState) error {
 	fmt.Printf("Beginning transaction!\n")
-	return nil;
+	return nil
 }
 
 func (statement Commit) Execute(state *db.DBState) error {
 	fmt.Printf("Committing transaction!\n")
-	return nil;
+	return nil
 }
 
 // Determines if `where` clause applies to row

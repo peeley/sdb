@@ -13,7 +13,7 @@ import (
 
 // Parses `USE <db_name>;` input.
 func ParseUseDBStatement(input string) (statements.Executable, error) {
-	trimmed, ok :=utils.HasPrefix(input, "use")
+	trimmed, ok := utils.HasPrefix(input, "use")
 	if !ok {
 		return nil, nil
 	}

@@ -13,7 +13,7 @@ import (
 )
 
 // Parses `CREATE TABLE <table_name> (<table_columns>);` input.
-func ParseCreateTableStatement(input string) (statements.Executable, error){
+func ParseCreateTableStatement(input string) (statements.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "create table")
 	if !ok {
 		return nil, nil
@@ -54,7 +54,7 @@ func ParseCreateTableStatement(input string) (statements.Executable, error){
 
 	statement := statements.CreateTableStatement{
 		TableName: tableName,
-		Columns: colList,
+		Columns:   colList,
 	}
 
 	return &statement, nil

@@ -70,12 +70,12 @@ func ParseJoinClause(input, leftTableName string) (*statements.JoinClause, error
 	trimmed, _ = utils.HasPrefix(trimmed, rightTableColumn)
 
 	joinClause := &statements.JoinClause{
-		JoinType: joinType,
-		LeftTable: leftTableName,
-		LeftTableAlias: leftTableAlias,
-		LeftTableColumn: leftTableColumn,
-		RightTable: rightTableName,
-		RightTableAlias: rightTableAlias,
+		JoinType:         joinType,
+		LeftTable:        leftTableName,
+		LeftTableAlias:   leftTableAlias,
+		LeftTableColumn:  leftTableColumn,
+		RightTable:       rightTableName,
+		RightTableAlias:  rightTableAlias,
 		RightTableColumn: rightTableColumn,
 	}
 

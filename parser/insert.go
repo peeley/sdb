@@ -2,12 +2,12 @@ package parser
 
 import (
 	"fmt"
-	"sdb/statements"
 	"sdb/db"
+	"sdb/statements"
 	"sdb/utils"
 )
 
-func ParseInsertStatement(input string) (statements.Executable, error){
+func ParseInsertStatement(input string) (statements.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "insert into")
 	if !ok {
 		return nil, nil
@@ -35,7 +35,7 @@ func ParseInsertStatement(input string) (statements.Executable, error){
 
 	statement := statements.InsertStatement{
 		TableName: tableName,
-		Values: valueList,
+		Values:    valueList,
 	}
 
 	return statement, nil

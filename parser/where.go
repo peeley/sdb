@@ -15,9 +15,9 @@ func ParseWhereClause(input string) (*statements.WhereClause, error) {
 	trimmed, _ = utils.HasPrefix(trimmed, colName)
 
 	var comparison string
-	if (trimmed[0] == '=' || trimmed[0] == '<' || trimmed[0] == '>') {
+	if trimmed[0] == '=' || trimmed[0] == '<' || trimmed[0] == '>' {
 		comparison = string(trimmed[0])
-	} else if( trimmed[:2] == "!=" || trimmed[:2] == "<=" || trimmed[:2] == ">=" ) {
+	} else if trimmed[:2] == "!=" || trimmed[:2] == "<=" || trimmed[:2] == ">=" {
 		comparison = string(trimmed[:2])
 	}
 
@@ -25,9 +25,9 @@ func ParseWhereClause(input string) (*statements.WhereClause, error) {
 
 	value, _ := utils.ParseValue(trimmed)
 
-	where := statements.WhereClause {
-		ColName: colName,
-		Comparison: comparison,
+	where := statements.WhereClause{
+		ColName:         colName,
+		Comparison:      comparison,
 		ComparisonValue: value,
 	}
 

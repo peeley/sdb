@@ -7,10 +7,10 @@
 package statements
 
 import (
+	"fmt"
+	"os"
 	"sdb/db"
 	"sdb/utils"
-	"os"
-	"fmt"
 )
 
 type CreateDBStatement struct {
@@ -19,12 +19,12 @@ type CreateDBStatement struct {
 
 type CreateTableStatement struct {
 	TableName string
-	Columns []db.Column
+	Columns   []db.Column
 }
 
 // Executes `CREATE DATABASE <db_name>;` query.
 func (statement CreateDBStatement) Execute(state *db.DBState) error {
-	err := os.Mkdir(statement.DBName, os.ModeDir | os.ModePerm)
+	err := os.Mkdir(statement.DBName, os.ModeDir|os.ModePerm)
 
 	if err != nil {
 		return fmt.Errorf(

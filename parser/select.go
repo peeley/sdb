@@ -50,12 +50,11 @@ func ParseSelectStatement(input string) (statements.Executable, error) {
 		joinClause, _ = ParseJoinClause(trimmed, tableName)
 	}
 
-
-	statement := statements.SelectStatement {
-		TableName: tableName,
+	statement := statements.SelectStatement{
+		TableName:   tableName,
 		ColumnNames: colNames,
 		WhereClause: where,
-		JoinClause: joinClause,
+		JoinClause:  joinClause,
 	}
 
 	return statement, nil

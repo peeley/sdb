@@ -13,13 +13,13 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"sdb/parser"
 	"sdb/db"
+	"sdb/parser"
 	"strings"
 )
 
 // Main REPL loop, runs until user terminates the loop or EOF is detected.
-func main(){
+func main() {
 	reader := bufio.NewReader(os.Stdin)
 	dbstate := db.NewState()
 

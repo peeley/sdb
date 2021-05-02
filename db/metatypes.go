@@ -41,10 +41,10 @@ func NewType(typename string, size int) Type {
 		return Int{}
 	}
 	if typename == "char" {
-		return Char{ size }
+		return Char{size}
 	}
 	if typename == "varchar" {
-		return VarChar{ size }
+		return VarChar{size}
 	}
 	return nil
 }
@@ -56,7 +56,7 @@ type Column struct {
 
 type Value struct {
 	Value interface{}
-	Type Type
+	Type  Type
 }
 
 func (v *Value) GetValue() interface{} {
@@ -117,13 +117,13 @@ type Type interface {
 // variable width `char` and `varchar` types. Will be more useful if enums or
 // other more complex types are implemented.
 
-type Float struct {}
+type Float struct{}
 
 func (float Float) ToString() string {
 	return "float"
 }
 
-type Int struct {}
+type Int struct{}
 
 func (int Int) ToString() string {
 	return "int"
@@ -145,7 +145,7 @@ func (varchar VarChar) ToString() string {
 	return fmt.Sprintf("varchar(%v)", varchar.Size)
 }
 
-type Null struct {}
+type Null struct{}
 
 func (null Null) ToString() string {
 	return "NULL"

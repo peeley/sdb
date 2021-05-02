@@ -114,7 +114,7 @@ func ParseValue(input string) (*db.Value, error) {
 		return nil, err
 	}
 
-	return &db.Value{ Value: nil, Type: db.Null{}}, nil
+	return &db.Value{Value: nil, Type: db.Null{}}, nil
 }
 
 // Parse floating point numeric of arbitrary precision
@@ -139,9 +139,9 @@ func ParseInt(input string) (*db.Value, error) {
 		return nil, err
 	}
 
-	val := db.Value {
+	val := db.Value{
 		Value: integer,
-		Type: db.Int{},
+		Type:  db.Int{},
 	}
 	return &val, nil
 }
@@ -177,7 +177,7 @@ func ParseFloat(input string) (*db.Value, error) {
 
 	val := &db.Value{
 		Value: float64(integer) + decimal,
-		Type: db.Float{},
+		Type:  db.Float{},
 	}
 	return val, nil
 }
@@ -208,7 +208,7 @@ func ParseString(input string) (*db.Value, error) {
 
 	val := &db.Value{
 		Value: string,
-		Type: db.VarChar{ Size: len(string) },
+		Type:  db.VarChar{Size: len(string)},
 	}
 
 	return val, nil
@@ -237,7 +237,7 @@ func ValueListToString(list []db.Value) string {
 	var stringBuilder strings.Builder
 	for idx, val := range list {
 		stringBuilder.WriteString(val.ToString())
-		if idx < len(list) - 1 {
+		if idx < len(list)-1 {
 			stringBuilder.WriteString(", ")
 		}
 	}
@@ -273,7 +273,7 @@ func OpenTable(state *db.DBState, tableName string, flags int) (*os.File, error)
 	// open file with mode flags, unix perm bits set to 0777
 	tableFile, err := os.OpenFile(tablePath, flags, 0777)
 	if err != nil {
-		return nil, fmt.Errorf("!Failed to select from table %v because it " +
+		return nil, fmt.Errorf("!Failed to select from table %v because it "+
 			"does not exist.", tableName)
 	}
 
@@ -289,7 +289,7 @@ func ColumnsToString(columns []db.Column) string {
 		columnString = fmt.Sprintf("%v %v", column.Name, column.Type.ToString())
 		tableTypesStringBuilder.WriteString(columnString)
 
-		if idx < len(columns) - 1 {
+		if idx < len(columns)-1 {
 			tableTypesStringBuilder.WriteString(", ")
 		}
 	}

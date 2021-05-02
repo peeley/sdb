@@ -23,8 +23,8 @@ func ParseDeleteStatement(input string) (statements.Executable, error) {
 		return nil, err
 	}
 
-	delete := statements.DeleteStatment {
-		TableName: tableName,
+	delete := statements.DeleteStatment{
+		TableName:   tableName,
 		WhereClause: where,
 	}
 

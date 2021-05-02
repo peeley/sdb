@@ -31,7 +31,7 @@ func Parse(input string) (statements.Executable, error) {
 
 	if err != nil {
 		return nil, err
-	} else if dropDB != nil{
+	} else if dropDB != nil {
 		return dropDB, nil
 	}
 
@@ -39,7 +39,7 @@ func Parse(input string) (statements.Executable, error) {
 
 	if err != nil {
 		return nil, err
-	} else if dropTable != nil{
+	} else if dropTable != nil {
 		return dropTable, nil
 	}
 
@@ -47,7 +47,7 @@ func Parse(input string) (statements.Executable, error) {
 
 	if err != nil {
 		return nil, err
-	} else if useDB != nil{
+	} else if useDB != nil {
 		return useDB, nil
 	}
 
@@ -55,7 +55,7 @@ func Parse(input string) (statements.Executable, error) {
 
 	if err != nil {
 		return nil, err
-	} else if selectStatement != nil{
+	} else if selectStatement != nil {
 		return selectStatement, nil
 	}
 
@@ -63,7 +63,7 @@ func Parse(input string) (statements.Executable, error) {
 
 	if err != nil {
 		return nil, err
-	} else if alterStatement != nil{
+	} else if alterStatement != nil {
 		return alterStatement, nil
 	}
 
@@ -71,7 +71,7 @@ func Parse(input string) (statements.Executable, error) {
 
 	if err != nil {
 		return nil, err
-	} else if createTable != nil{
+	} else if createTable != nil {
 		return createTable, nil
 	}
 

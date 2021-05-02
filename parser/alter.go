@@ -15,7 +15,7 @@ import (
 
 // Parses `ALTER TABLE` input.
 func ParseAlterStatement(input string) (statements.Executable, error) {
-	trimmed, ok :=utils.HasPrefix(input, "alter table")
+	trimmed, ok := utils.HasPrefix(input, "alter table")
 	if !ok {
 		return nil, nil
 	}
@@ -46,7 +46,7 @@ func ParseAlterStatement(input string) (statements.Executable, error) {
 	}
 
 	alterStatement := statements.AlterStatement{
-		TableName: tableName,
+		TableName:  tableName,
 		ColumnName: newColName,
 		ColumnType: typeName,
 	}

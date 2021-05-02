@@ -1,11 +1,11 @@
 package parser
 
 import (
-	"sdb/utils"
 	"sdb/statements"
+	"sdb/utils"
 )
 
-func ParseUpdateStatement(input string) (statements.Executable, error){
+func ParseUpdateStatement(input string) (statements.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "update")
 	if !ok {
 		return nil, nil
@@ -26,10 +26,10 @@ func ParseUpdateStatement(input string) (statements.Executable, error){
 	where, _ := ParseWhereClause(trimmed)
 
 	update := statements.UpdateStatement{
-		TableName: tableName,
-		UpdatedCol: colName,
+		TableName:    tableName,
+		UpdatedCol:   colName,
 		UpdatedValue: value,
-		WhereClause: where,
+		WhereClause:  where,
 	}
 
 	return update, nil
