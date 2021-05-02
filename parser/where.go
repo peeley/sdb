@@ -1,11 +1,11 @@
 package parser
 
 import (
-	"sdb/types"
+	"sdb/statements"
 	"sdb/utils"
 )
 
-func ParseWhereClause(input string) (*types.WhereClause, error) {
+func ParseWhereClause(input string) (*statements.WhereClause, error) {
 	trimmed, ok := utils.HasPrefix(input, "where")
 	if !ok {
 		return nil, nil
@@ -25,7 +25,7 @@ func ParseWhereClause(input string) (*types.WhereClause, error) {
 
 	value, _ := utils.ParseValue(trimmed)
 
-	where := types.WhereClause {
+	where := statements.WhereClause {
 		ColName: colName,
 		Comparison: comparison,
 		ComparisonValue: value,

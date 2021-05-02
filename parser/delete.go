@@ -2,11 +2,11 @@ package parser
 
 import (
 	"errors"
-	"sdb/types"
+	"sdb/statements"
 	"sdb/utils"
 )
 
-func ParseDeleteStatement(input string) (types.Statement, error) {
+func ParseDeleteStatement(input string) (statements.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "delete from")
 	if !ok {
 		return nil, nil
@@ -23,7 +23,7 @@ func ParseDeleteStatement(input string) (types.Statement, error) {
 		return nil, err
 	}
 
-	delete := types.DeleteStatment {
+	delete := statements.DeleteStatment {
 		TableName: tableName,
 		WhereClause: where,
 	}

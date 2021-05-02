@@ -1,18 +1,19 @@
 // Noah Snelson
 // February 25, 2021
-// sdb/parser/go
+// sdb/utils/utils.go
 //
-// Common parsing utilities used across several top-level parsing functions.
+// Common utility functions used in both parsing functions and executing
+// database functionality.
 
 package utils
 
 import (
 	"fmt"
-	"sdb/types/metatypes"
+	"os"
+	"sdb/db"
 	"strconv"
 	"strings"
 	"unicode"
-	"os"
 )
 
 // Detects if input is comment by checking if it begins with "--"
@@ -37,7 +38,8 @@ func ParseIdentifier(input string) string {
 
 	for idx := 0; idx < len(input); idx++ {
 		char := rune(input[idx])
-		if !(unicode.IsLetter(char) || unicode.IsNumber(char) || char == rune('_') || char == rune('*')) {
+		if !(unicode.IsLetter(char) || unicode.IsNumber(char) ||
+			char == rune('_') || char == rune('*')) {
 			break
 		}
 		builder.WriteByte(input[idx])
@@ -48,12 +50,12 @@ func ParseIdentifier(input string) string {
 
 // Parses the various types the database supports, like `float`, `int`,
 // `char(X)`, and `varchar(X)`.
-func ParseType(input string) (metatypes.Type, error) {
+func ParseType(input string) (db.Type, error) {
 	baseType := ParseIdentifier(input)
 
-	for _, typeName := range metatypes.ConstWidthTypes {
+	for _, typeName := range db.ConstWidthTypes {
 		if typeName == baseType {
-			return metatypes.NewType(typeName, 0), nil
+			return db.NewType(typeName, 0), nil
 		}
 	}
 
@@ -75,7 +77,8 @@ func ParseType(input string) (metatypes.Type, error) {
 
 	trimmed = strings.TrimPrefix(trimmed, numberString)
 	if len(trimmed) < 1 || trimmed[0] != ')' {
-		return nil, fmt.Errorf("Expected ')' after parameters of type %v.", baseType)
+		return nil,
+			fmt.Errorf("Expected ')' after parameters of type %v.", baseType)
 	}
 	trimmed = strings.TrimPrefix(trimmed, ")")
 
@@ -84,11 +87,11 @@ func ParseType(input string) (metatypes.Type, error) {
 		return nil, err
 	}
 
-	return metatypes.NewType(baseType, size), nil
+	return db.NewType(baseType, size), nil
 }
 
 // Parses type in tuple e.g. 123, 3.14, "hello"
-func ParseValue(input string) (*metatypes.Value, error) {
+func ParseValue(input string) (*db.Value, error) {
 
 	float, err := ParseFloat(input)
 	if float != nil {
@@ -111,11 +114,11 @@ func ParseValue(input string) (*metatypes.Value, error) {
 		return nil, err
 	}
 
-	return &metatypes.Value{ Value: nil, Type: metatypes.Null{}}, nil
+	return &db.Value{ Value: nil, Type: db.Null{}}, nil
 }
 
 // Parse floating point numeric of arbitrary precision
-func ParseInt(input string) (*metatypes.Value, error) {
+func ParseInt(input string) (*db.Value, error) {
 
 	var integerBuilder strings.Builder
 	for _, digit := range input {
@@ -136,15 +139,15 @@ func ParseInt(input string) (*metatypes.Value, error) {
 		return nil, err
 	}
 
-	val := metatypes.Value {
+	val := db.Value {
 		Value: integer,
-		Type: metatypes.Int{},
+		Type: db.Int{},
 	}
 	return &val, nil
 }
 
 // Parse integer
-func ParseFloat(input string) (*metatypes.Value, error) {
+func ParseFloat(input string) (*db.Value, error) {
 	var integerBuilder strings.Builder
 	for _, digit := range input {
 		if !unicode.IsNumber(digit) {
@@ -172,9 +175,9 @@ func ParseFloat(input string) (*metatypes.Value, error) {
 	decimalString := decimalBuilder.String()
 	decimal, _ := strconv.ParseFloat(decimalString, 64)
 
-	val := &metatypes.Value{
+	val := &db.Value{
 		Value: float64(integer) + decimal,
-		Type: metatypes.Float{},
+		Type: db.Float{},
 	}
 	return val, nil
 }
@@ -182,7 +185,7 @@ func ParseFloat(input string) (*metatypes.Value, error) {
 // Parse string.
 // Always returns a value of varchar(length of string)
 // This is checked against the column var/varchar(length) later
-func ParseString(input string) (*metatypes.Value, error) {
+func ParseString(input string) (*db.Value, error) {
 	trimmed, ok := HasPrefix(input, "'")
 	if !ok {
 		return nil, fmt.Errorf("Expected string to start with `'`")
@@ -203,16 +206,16 @@ func ParseString(input string) (*metatypes.Value, error) {
 		return nil, fmt.Errorf("Expected string to end with `'`")
 	}
 
-	val := &metatypes.Value{
+	val := &db.Value{
 		Value: string,
-		Type: metatypes.VarChar{ Size: len(string) },
+		Type: db.VarChar{ Size: len(string) },
 	}
 
 	return val, nil
 }
 
-func ParseValueList(input string) ([]metatypes.Value, string, error) {
-	var valueList []metatypes.Value
+func ParseValueList(input string) ([]db.Value, string, error) {
+	var valueList []db.Value
 
 	trimmed := input
 	var ok bool
@@ -230,7 +233,7 @@ func ParseValueList(input string) ([]metatypes.Value, string, error) {
 	}
 }
 
-func ValueListToString(list []metatypes.Value) string {
+func ValueListToString(list []db.Value) string {
 	var stringBuilder strings.Builder
 	for idx, val := range list {
 		stringBuilder.WriteString(val.ToString())
@@ -245,7 +248,7 @@ func ValueListToString(list []metatypes.Value) string {
 
 // Determines if table exists given current DBState and given table name. Return
 // table path and boolean representing existence of table.
-func TableExists(state *metatypes.DBState, tableName string) (string, bool) {
+func TableExists(state *db.DBState, tableName string) (string, bool) {
 	var tablePathBuilder strings.Builder
 	tablePathBuilder.WriteString(state.CurrentDB)
 	tablePathBuilder.WriteString("/")
@@ -259,7 +262,7 @@ func TableExists(state *metatypes.DBState, tableName string) (string, bool) {
 }
 
 // Opens table file based on current DBState and given table name.
-func OpenTable(state *metatypes.DBState, tableName string, flags int) (*os.File, error) {
+func OpenTable(state *db.DBState, tableName string, flags int) (*os.File, error) {
 	var tablePathBuilder strings.Builder
 	tablePathBuilder.WriteString(state.CurrentDB)
 	tablePathBuilder.WriteString("/")
@@ -270,14 +273,15 @@ func OpenTable(state *metatypes.DBState, tableName string, flags int) (*os.File,
 	// open file with mode flags, unix perm bits set to 0777
 	tableFile, err := os.OpenFile(tablePath, flags, 0777)
 	if err != nil {
-		return nil, fmt.Errorf("!Failed to select from table %v because it does not exist.", tableName)
+		return nil, fmt.Errorf("!Failed to select from table %v because it " +
+			"does not exist.", tableName)
 	}
 
 	return tableFile, nil
 }
 
 // Convert mapping of column names -> column types to a formatted string.
-func ColumnsToString(columns []metatypes.Column) string {
+func ColumnsToString(columns []db.Column) string {
 	var tableTypesStringBuilder strings.Builder
 	var columnString string
 
@@ -320,9 +324,9 @@ func TableHeaderToColMap(header string) map[string]int {
 }
 
 // Function to parse <table_columns> into map of column name -> column type.
-func ParseColumnList(input string) ([]metatypes.Column, error) {
+func ParseColumnList(input string) ([]db.Column, error) {
 	trimmed := input
-	var cols []metatypes.Column
+	var cols []db.Column
 	var ok bool
 	for {
 		trimmed = strings.TrimSpace(trimmed)
@@ -334,7 +338,7 @@ func ParseColumnList(input string) ([]metatypes.Column, error) {
 		}
 		trimmed, _ = HasPrefix(trimmed, colType.ToString())
 
-		cols = append(cols, metatypes.Column{
+		cols = append(cols, db.Column{
 			Name: ident,
 			Type: colType,
 		})

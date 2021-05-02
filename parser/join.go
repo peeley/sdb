@@ -17,30 +17,30 @@
 package parser
 
 import (
-	"sdb/types"
+	"sdb/statements"
 	"sdb/utils"
 	"strings"
 )
 
-func ParseJoinClause(input, leftTableName string) (*types.JoinClause, error) {
+func ParseJoinClause(input, leftTableName string) (*statements.JoinClause, error) {
 	leftTableAlias := utils.ParseIdentifier(input)
 	trimmed, _ := utils.HasPrefix(input, leftTableAlias)
 	if leftTableAlias == "" || trimmed == "" {
 		return nil, nil
 	}
 
-	var joinType types.JoinType
+	var joinType statements.JoinType
 	if strings.HasPrefix(trimmed, ",") {
-		joinType = types.InnerJoin
+		joinType = statements.InnerJoin
 		trimmed, _ = utils.HasPrefix(trimmed, ",")
 	} else if strings.HasPrefix(trimmed, "inner join") {
-		joinType = types.InnerJoin
+		joinType = statements.InnerJoin
 		trimmed, _ = utils.HasPrefix(trimmed, "inner join")
 	} else if strings.HasPrefix(trimmed, "left outer join") {
-		joinType = types.LeftOuterJoin
+		joinType = statements.LeftOuterJoin
 		trimmed, _ = utils.HasPrefix(trimmed, "left outer join")
 	} else if strings.HasPrefix(trimmed, "right outer join") {
-		joinType = types.RightOuterJoin
+		joinType = statements.RightOuterJoin
 		trimmed, _ = utils.HasPrefix(trimmed, "right outer join")
 	} else {
 		return nil, nil
@@ -51,7 +51,7 @@ func ParseJoinClause(input, leftTableName string) (*types.JoinClause, error) {
 	rightTableAlias := utils.ParseIdentifier(trimmed)
 	trimmed, _ = utils.HasPrefix(trimmed, rightTableAlias)
 
-	if joinType == types.InnerJoin {
+	if joinType == statements.InnerJoin {
 		trimmed, _ = utils.HasPrefix(trimmed, "where")
 	} else {
 		trimmed, _ = utils.HasPrefix(trimmed, "on")
@@ -69,7 +69,7 @@ func ParseJoinClause(input, leftTableName string) (*types.JoinClause, error) {
 	rightTableColumn := utils.ParseIdentifier(trimmed)
 	trimmed, _ = utils.HasPrefix(trimmed, rightTableColumn)
 
-	joinClause := &types.JoinClause{
+	joinClause := &statements.JoinClause{
 		JoinType: joinType,
 		LeftTable: leftTableName,
 		LeftTableAlias: leftTableAlias,

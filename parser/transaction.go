@@ -1,25 +1,25 @@
 package parser
 
 import (
-	"sdb/types"
+	"sdb/statements"
 	"sdb/utils"
 )
 
-func ParseBeginTransaction(input string) (types.Statement, error) {
+func ParseBeginTransaction(input string) (statements.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "begin transaction")
 
 	if ok && trimmed == "" {
-		return types.BeginTransaction{}, nil
+		return statements.BeginTransaction{}, nil
 	} else {
 		return nil, nil
 	}
 }
 
-func ParseCommit(input string) (types.Statement, error) {
+func ParseCommit(input string) (statements.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "commit")
 
 	if ok && trimmed == "" {
-		return types.Commit{}, nil
+		return statements.Commit{}, nil
 	} else {
 		return nil, nil
 	}

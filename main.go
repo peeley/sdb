@@ -14,34 +14,31 @@ import (
 	"fmt"
 	"os"
 	"sdb/parser"
-	"sdb/types/metatypes"
+	"sdb/db"
 	"strings"
 )
 
 // Main REPL loop, runs until user terminates the loop or EOF is detected.
 func main(){
 	reader := bufio.NewReader(os.Stdin)
-	dbstate := metatypes.NewState()
+	dbstate := db.NewState()
 
 	var inputBuilder strings.Builder
 	var input string
 	var err error
 	for {
-		for {
+		input = ""
+		for !strings.HasSuffix(strings.TrimSpace(input), ";") {
+			fmt.Print("> ")
 			input, err = reader.ReadString('\n')
 			inputBuilder.WriteString(input)
 			if len(strings.TrimSpace(input)) == 0 {
-				break
-			}
-
-			fmt.Print(">")
-			fmt.Printf(" %v\n", strings.TrimSpace(input))
-			if strings.HasPrefix(input, "--") {
-				break
-			}
-
-			if strings.HasSuffix(strings.TrimSpace(input), ";") {
 				fmt.Println()
+				break
+			}
+
+			fmt.Printf("%v\n", strings.TrimSpace(input))
+			if strings.HasPrefix(input, "--") {
 				break
 			}
 
@@ -49,12 +46,10 @@ func main(){
 				fmt.Println("\nGoodbye!")
 				os.Exit(0)
 			}
-
-			fmt.Print(">")
 		}
 
 		if err != nil {
-			fmt.Println("\n\nGoodbye!")
+			fmt.Printf("ERROR: %v\n", err)
 			break
 		}
 

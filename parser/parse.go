@@ -12,19 +12,19 @@ package parser
 
 import (
 	"errors"
-	"sdb/types"
+	"sdb/statements"
 	"sdb/utils"
 	"strings"
 )
 
 // Main parsing function, prompt input/stdin is fed in as a parameter and a
-// types.Statement interface is returned to be executed in sdb/main.go.
-func Parse(input string) (types.Statement, error) {
+// statements.Executable interface is returned to be executed in sdb/main.go.
+func Parse(input string) (statements.Executable, error) {
 	input = strings.TrimSpace(input)
 	input = strings.ToLower(input)
 
 	if utils.IsComment(input) {
-		return types.Comment{}, nil
+		return statements.Comment{}, nil
 	}
 
 	dropDB, err := ParseDropDBStatement(input)

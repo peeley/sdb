@@ -1,17 +1,17 @@
 // Noah Snelson
 // February 25, 2021
-// sdb/types/statement.go
+// sdb/statements/statement.go
 //
 // Contains type declarations for all SQL statements, as well as interfaces for
 // executing SQL statements. Core logic of the database can be found in here.
 
-package types
+package statements
 
 import (
 	"bufio"
 	"fmt"
 	"os"
-	"sdb/types/metatypes"
+	"sdb/db"
 	"sdb/utils"
 	"strings"
 )
@@ -19,17 +19,14 @@ import (
 // All SQL statement types implement this interface. The `Execute` function
 // contains the core logic of the query, which is executed in the REPL at the
 // `sdb/main.go` main function.
-type Statement interface {
-	Execute(*metatypes.DBState) error
+type Executable interface {
+	Execute(*db.DBState) error
 }
 
 // These statement structs are what is output by their respective parsing
 // functions. Every field of the struct represents a dynamic variable of the
 // query, and the `Execute` function they implement uses these fields to
 // implement the statement's functionality.
-type CreateDBStatement struct {
-	DBName string
-}
 
 type DropDBStatement struct {
 	DBName string
@@ -37,11 +34,6 @@ type DropDBStatement struct {
 
 type UseDBStatement struct {
 	DBName string
-}
-
-type CreateTableStatement struct {
-	TableName string
-	Columns []metatypes.Column
 }
 
 type DropTableStatement struct {
@@ -58,18 +50,18 @@ type SelectStatement struct {
 type AlterStatement struct {
 	TableName string
 	ColumnName string
-	ColumnType metatypes.Type
+	ColumnType db.Type
 }
 
 type InsertStatement struct {
 	TableName string
-	Values []metatypes.Value
+	Values []db.Value
 }
 
 type UpdateStatement struct {
 	TableName string
 	UpdatedCol string
-	UpdatedValue *metatypes.Value
+	UpdatedValue *db.Value
 	WhereClause *WhereClause
 }
 
@@ -81,7 +73,7 @@ type DeleteStatment struct {
 type WhereClause struct {
 	ColName string
 	Comparison string
-	ComparisonValue *metatypes.Value
+	ComparisonValue *db.Value
 }
 
 type JoinType string
@@ -113,23 +105,8 @@ type Commit struct{}
 
 // --- `Statement` interface implementations -----------------------------------
 
-// Executes `CREATE DATABASE <db_name>;` query.
-func (statement CreateDBStatement) Execute(state *metatypes.DBState) error {
-	err := os.Mkdir(statement.DBName, os.ModeDir | os.ModePerm)
-
-	if err != nil {
-		return fmt.Errorf(
-			"!Failed to create database %v because it already exists.",
-			statement.DBName,
-		)
-	}
-
-	fmt.Printf("Database %v created.\n", statement.DBName)
-	return nil
-}
-
 // Executes `DROP DATABASE <db_name>;` query.
-func (statement DropDBStatement) Execute(state *metatypes.DBState) error {
+func (statement DropDBStatement) Execute(state *db.DBState) error {
 	_, err := os.Stat(statement.DBName)
 
 	if err != nil {
@@ -144,7 +121,7 @@ func (statement DropDBStatement) Execute(state *metatypes.DBState) error {
 
 // Executes `DROP TABLE <table_name>;` query. Assumes that the table being
 // deleted is in the current database stored in DBState.
-func (statement DropTableStatement) Execute(state *metatypes.DBState) error {
+func (statement DropTableStatement) Execute(state *db.DBState) error {
 	tablePath, exists := utils.TableExists(state, statement.TableName)
 
 	if !exists {
@@ -162,7 +139,7 @@ func (statement DropTableStatement) Execute(state *metatypes.DBState) error {
 }
 
 // Executes `USE <db_name>;` queries. Changes the current DB in DBState.
-func (statement UseDBStatement) Execute(state *metatypes.DBState) error {
+func (statement UseDBStatement) Execute(state *db.DBState) error {
 	_, err := os.Stat(statement.DBName)
 
 	if err != nil {
@@ -174,29 +151,8 @@ func (statement UseDBStatement) Execute(state *metatypes.DBState) error {
 	return nil
 }
 
-// Executes `CREATE TABLE <table_name> (<table_columns>);` queries.
-func (statement CreateTableStatement) Execute(state *metatypes.DBState) error {
-	tablePath, exists := utils.TableExists(state, statement.TableName)
-
-	if exists {
-		return fmt.Errorf("!Failed to create table %v because it already exists.", statement.TableName)
-	}
-
-	tableFile, err := os.Create(tablePath)
-	if err != nil {
-		return fmt.Errorf("!Failed to create table %v because it already exists.", statement.TableName)
-	}
-
-	tableTypesString := utils.ColumnsToString(statement.Columns)
-	tableFile.WriteString(tableTypesString)
-	tableFile.WriteString("\n")
-
-	fmt.Printf("Table %v created.\n", statement.TableName)
-	return nil
-}
-
 // Executes `SELECT <columns> FROM <table_name> [WHERE <condition>];` queries.
-func (statement SelectStatement) Execute(state *metatypes.DBState) error {
+func (statement SelectStatement) Execute(state *db.DBState) error {
 	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_RDONLY)
 	if err != nil {
 		return fmt.Errorf("!Failed to select from table %v because it does not exist.", statement.TableName)
@@ -228,7 +184,7 @@ func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 
 	// need to forward declare variables used in JOINs
 	var joinTableColMap map[string]int
-	var joinTableRows [][]metatypes.Value
+	var joinTableRows [][]db.Value
 	if statement.JoinClause != nil {
 		joinTableReader := bufio.NewReader(joinTableFile)
 		joinTableHeader, _ := joinTableReader.ReadString('\n')
@@ -320,13 +276,13 @@ func (statement SelectStatement) Execute(state *metatypes.DBState) error {
 }
 
 // Executes comments - comments are essentially no-ops.
-func (statement Comment) Execute(state *metatypes.DBState) error {
+func (statement Comment) Execute(state *db.DBState) error {
 	return nil
 }
 
 // Executes `ALTER TABLE <table_name> ADD <column_name> <column_type>;`
 // statements.
-func (statement AlterStatement) Execute(state *metatypes.DBState) error {
+func (statement AlterStatement) Execute(state *db.DBState) error {
 	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_RDWR)
 	if err != nil {
 		return fmt.Errorf(
@@ -370,7 +326,7 @@ func (statement AlterStatement) Execute(state *metatypes.DBState) error {
 	return nil
 }
 
-func (statement InsertStatement) Execute(state *metatypes.DBState) error {
+func (statement InsertStatement) Execute(state *db.DBState) error {
 	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_APPEND|os.O_RDWR)
 	if err != nil {
 		return fmt.Errorf("!Failed to insert into table %v because it does not exist.", statement.TableName)
@@ -383,7 +339,7 @@ func (statement InsertStatement) Execute(state *metatypes.DBState) error {
 		return fmt.Errorf("!Failed to read from table file %v.", statement.TableName)
 	}
 
-	var tableTypes []metatypes.Type
+	var tableTypes []db.Type
 	var ok bool
 	for {
 		if tableHeader == "" {
@@ -437,7 +393,7 @@ func (statement InsertStatement) Execute(state *metatypes.DBState) error {
 	return nil
 }
 
-func (statement UpdateStatement) Execute(state *metatypes.DBState) error {
+func (statement UpdateStatement) Execute(state *db.DBState) error {
 	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_RDONLY)
 	if err != nil {
 		fmt.Println(err)
@@ -493,7 +449,7 @@ func (statement UpdateStatement) Execute(state *metatypes.DBState) error {
 	return nil
 }
 
-func (statement DeleteStatment) Execute(state *metatypes.DBState) error {
+func (statement DeleteStatment) Execute(state *db.DBState) error {
 	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_RDONLY)
 	if err != nil {
 		fmt.Println(err)
@@ -543,18 +499,18 @@ func (statement DeleteStatment) Execute(state *metatypes.DBState) error {
 	return nil
 }
 
-func (statement BeginTransaction) Execute(state *metatypes.DBState) error {
+func (statement BeginTransaction) Execute(state *db.DBState) error {
 	fmt.Printf("Beginning transaction!\n")
 	return nil;
 }
 
-func (statement Commit) Execute(state *metatypes.DBState) error {
+func (statement Commit) Execute(state *db.DBState) error {
 	fmt.Printf("Committing transaction!\n")
 	return nil;
 }
 
 // Determines if `where` clause applies to row
-func whereApplies(where *WhereClause, colNames map[string]int, row []metatypes.Value) bool {
+func whereApplies(where *WhereClause, colNames map[string]int, row []db.Value) bool {
 	if where == nil {
 		return true
 	}
@@ -583,7 +539,7 @@ func whereApplies(where *WhereClause, colNames map[string]int, row []metatypes.V
 // Determines if a row in the 'left' table should be joined to any rows from the
 // 'right' table. Assumes that tables are being joined on an equality
 // comparison between the joining columns.
-func applyJoin(joinClause JoinClause, colNames map[string]int, joinColNames map[string]int, joinRows [][]metatypes.Value, row []metatypes.Value) string {
+func applyJoin(joinClause JoinClause, colNames map[string]int, joinColNames map[string]int, joinRows [][]db.Value, row []db.Value) string {
 	var joinedRowsBuilder strings.Builder
 	for _, joinRow := range joinRows {
 		leftColIdx := colNames[joinClause.LeftTableColumn]

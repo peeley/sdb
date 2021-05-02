@@ -1,11 +1,11 @@
 // Noah Snelson
 // February 25, 2021
-// sdb/types/db.go
+// sdb/db/metatypes.go
 //
 // Contains types for core database functionality, including current database
 // state and all the types stored by the database.
 
-package metatypes
+package db
 
 import (
 	"fmt"

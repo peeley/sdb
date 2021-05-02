@@ -8,13 +8,13 @@ package parser
 
 import (
 	"fmt"
-	"sdb/types"
+	"sdb/statements"
 	"sdb/utils"
 	"strings"
 )
 
 // Parses `ALTER TABLE` input.
-func ParseAlterStatement(input string) (types.Statement, error) {
+func ParseAlterStatement(input string) (statements.Executable, error) {
 	trimmed, ok :=utils.HasPrefix(input, "alter table")
 	if !ok {
 		return nil, nil
@@ -45,7 +45,7 @@ func ParseAlterStatement(input string) (types.Statement, error) {
 		return nil, err
 	}
 
-	alterStatement := types.AlterStatement{
+	alterStatement := statements.AlterStatement{
 		TableName: tableName,
 		ColumnName: newColName,
 		ColumnType: typeName,

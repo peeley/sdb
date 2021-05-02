@@ -8,12 +8,12 @@ package parser
 
 import (
 	"fmt"
-	"sdb/types"
+	"sdb/statements"
 	"sdb/utils"
 )
 
 // Parses `SELECT` input.
-func ParseSelectStatement(input string) (types.Statement, error) {
+func ParseSelectStatement(input string) (statements.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "select")
 	if !ok {
 		return nil, nil
@@ -45,13 +45,13 @@ func ParseSelectStatement(input string) (types.Statement, error) {
 
 	where, _ := ParseWhereClause(trimmed)
 
-	var joinClause *types.JoinClause
+	var joinClause *statements.JoinClause
 	if where == nil {
 		joinClause, _ = ParseJoinClause(trimmed, tableName)
 	}
 
 
-	statement := types.SelectStatement {
+	statement := statements.SelectStatement {
 		TableName: tableName,
 		ColumnNames: colNames,
 		WhereClause: where,

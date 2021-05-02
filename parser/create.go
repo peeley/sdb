@@ -8,12 +8,12 @@ package parser
 
 import (
 	"errors"
-	"sdb/types"
+	"sdb/statements"
 	"sdb/utils"
 )
 
 // Parses `CREATE TABLE <table_name> (<table_columns>);` input.
-func ParseCreateTableStatement(input string) (types.Statement, error){
+func ParseCreateTableStatement(input string) (statements.Executable, error){
 	trimmed, ok := utils.HasPrefix(input, "create table")
 	if !ok {
 		return nil, nil
@@ -52,7 +52,7 @@ func ParseCreateTableStatement(input string) (types.Statement, error){
 		)
 	}
 
-	statement := types.CreateTableStatement{
+	statement := statements.CreateTableStatement{
 		TableName: tableName,
 		Columns: colList,
 	}
@@ -61,7 +61,7 @@ func ParseCreateTableStatement(input string) (types.Statement, error){
 }
 
 // Parses `CREATE DATABASE <db_name>;` input.
-func ParseCreateDBStatement(input string) (types.Statement, error) {
+func ParseCreateDBStatement(input string) (statements.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "create database")
 	if !ok {
 		return nil, nil
@@ -69,7 +69,7 @@ func ParseCreateDBStatement(input string) (types.Statement, error) {
 
 	ident := utils.ParseIdentifier(trimmed)
 
-	createDB := types.CreateDBStatement{
+	createDB := statements.CreateDBStatement{
 		DBName: ident,
 	}
 

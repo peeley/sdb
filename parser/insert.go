@@ -2,12 +2,12 @@ package parser
 
 import (
 	"fmt"
-	"sdb/types"
-	"sdb/types/metatypes"
+	"sdb/statements"
+	"sdb/db"
 	"sdb/utils"
 )
 
-func ParseInsertStatement(input string) (types.Statement, error){
+func ParseInsertStatement(input string) (statements.Executable, error){
 	trimmed, ok := utils.HasPrefix(input, "insert into")
 	if !ok {
 		return nil, nil
@@ -21,7 +21,7 @@ func ParseInsertStatement(input string) (types.Statement, error){
 		return nil, fmt.Errorf("Expected 'values' after table to insert into")
 	}
 
-	var valueList []metatypes.Value
+	var valueList []db.Value
 	var err error
 	valueList, trimmed, err = utils.ParseValueList(trimmed)
 	if err != nil {
@@ -33,7 +33,7 @@ func ParseInsertStatement(input string) (types.Statement, error){
 		return nil, fmt.Errorf("Expected list of values to end in ')'")
 	}
 
-	statement := types.InsertStatement{
+	statement := statements.InsertStatement{
 		TableName: tableName,
 		Values: valueList,
 	}
