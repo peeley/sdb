@@ -8,12 +8,13 @@ package parser
 
 import (
 	"errors"
+	"sdb/db"
 	"sdb/statements"
 	"sdb/utils"
 )
 
 // Parses `CREATE TABLE <table_name> (<table_columns>);` input.
-func ParseCreateTableStatement(input string) (statements.Executable, error) {
+func ParseCreateTableStatement(input string) (db.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "create table")
 	if !ok {
 		return nil, nil
@@ -61,7 +62,7 @@ func ParseCreateTableStatement(input string) (statements.Executable, error) {
 }
 
 // Parses `CREATE DATABASE <db_name>;` input.
-func ParseCreateDBStatement(input string) (statements.Executable, error) {
+func ParseCreateDBStatement(input string) (db.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "create database")
 	if !ok {
 		return nil, nil

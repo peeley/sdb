@@ -7,12 +7,13 @@
 package parser
 
 import (
+	"sdb/db"
 	"sdb/statements"
 	"sdb/utils"
 )
 
 // Parses `DROP DATABASE <table_name>;` input.
-func ParseDropDBStatement(input string) (statements.Executable, error) {
+func ParseDropDBStatement(input string) (db.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "drop database")
 	if !ok {
 		return nil, nil
@@ -28,7 +29,7 @@ func ParseDropDBStatement(input string) (statements.Executable, error) {
 }
 
 // Parses `DROP TABLE <table_name>;` input.
-func ParseDropTableStatement(input string) (statements.Executable, error) {
+func ParseDropTableStatement(input string) (db.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "drop table")
 	if !ok {
 		return nil, nil

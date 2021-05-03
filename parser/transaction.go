@@ -1,11 +1,12 @@
 package parser
 
 import (
+	"sdb/db"
 	"sdb/statements"
 	"sdb/utils"
 )
 
-func ParseBeginTransaction(input string) (statements.Executable, error) {
+func ParseBeginTransaction(input string) (db.Executable, error) {
 	_, ok := utils.HasPrefix(input, "begin transaction")
 
 	if ok {
@@ -15,7 +16,7 @@ func ParseBeginTransaction(input string) (statements.Executable, error) {
 	}
 }
 
-func ParseCommit(input string) (statements.Executable, error) {
+func ParseCommit(input string) (db.Executable, error) {
 	_, ok := utils.HasPrefix(input, "commit")
 
 	if ok {

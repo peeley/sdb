@@ -23,11 +23,20 @@ type DBState struct {
 	Transaction *Transaction
 }
 
-type Transaction struct {
-	LockFiles []string
+// All SQL statement types implement this interface. The `Execute` function
+// contains the core logic of the query, which is executed in the REPL at the
+// `sdb/main.go` main function. See each statement's respective file in
+// `sdb/statements/<statement>.go`.
+type Executable interface {
+	Execute(*DBState) error
 }
 
-func (state DBState) BeginTransaction() {
+type Transaction struct {
+	LockFiles  []string
+	Statements []Executable
+}
+
+func (state *DBState) BeginTransaction() {
 	state.Transaction = &Transaction{}
 }
 

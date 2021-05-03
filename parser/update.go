@@ -1,11 +1,12 @@
 package parser
 
 import (
+	"sdb/db"
 	"sdb/statements"
 	"sdb/utils"
 )
 
-func ParseUpdateStatement(input string) (statements.Executable, error) {
+func ParseUpdateStatement(input string) (db.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "update")
 	if !ok {
 		return nil, nil

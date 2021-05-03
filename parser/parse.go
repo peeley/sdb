@@ -12,14 +12,15 @@ package parser
 
 import (
 	"errors"
+	"sdb/db"
 	"sdb/statements"
 	"sdb/utils"
 	"strings"
 )
 
 // Main parsing function, prompt input/stdin is fed in as a parameter and a
-// statements.Executable interface is returned to be executed in sdb/main.go.
-func Parse(input string) (statements.Executable, error) {
+// db.Executable interface is returned to be executed in sdb/main.go.
+func Parse(input string) (db.Executable, error) {
 	input = strings.TrimSpace(input)
 	input = strings.ToLower(input)
 

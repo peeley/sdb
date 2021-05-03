@@ -22,6 +22,7 @@ type UpdateStatement struct {
 }
 
 func (statement UpdateStatement) Execute(state *db.DBState) error {
+	fmt.Println(state.Transaction)
 	if state.Transaction != nil {
 		lockFileName, err := createTableLock(state.CurrentDB, statement.TableName)
 		if err != nil {
@@ -32,6 +33,12 @@ func (statement UpdateStatement) Execute(state *db.DBState) error {
 			state.Transaction.LockFiles,
 			lockFileName,
 		)
+		state.Transaction.Statements = append(
+			state.Transaction.Statements,
+			statement,
+		)
+
+		return nil
 	}
 
 	tableFile, err := utils.OpenTable(state, statement.TableName, os.O_RDONLY)

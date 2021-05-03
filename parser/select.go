@@ -8,12 +8,13 @@ package parser
 
 import (
 	"fmt"
+	"sdb/db"
 	"sdb/statements"
 	"sdb/utils"
 )
 
 // Parses `SELECT` input.
-func ParseSelectStatement(input string) (statements.Executable, error) {
+func ParseSelectStatement(input string) (db.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "select")
 	if !ok {
 		return nil, nil

@@ -7,7 +7,7 @@ import (
 	"sdb/utils"
 )
 
-func ParseInsertStatement(input string) (statements.Executable, error) {
+func ParseInsertStatement(input string) (db.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "insert into")
 	if !ok {
 		return nil, nil

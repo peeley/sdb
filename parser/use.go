@@ -7,12 +7,13 @@
 package parser
 
 import (
+	"sdb/db"
 	"sdb/statements"
 	"sdb/utils"
 )
 
 // Parses `USE <db_name>;` input.
-func ParseUseDBStatement(input string) (statements.Executable, error) {
+func ParseUseDBStatement(input string) (db.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "use")
 	if !ok {
 		return nil, nil

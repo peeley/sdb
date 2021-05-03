@@ -2,11 +2,12 @@ package parser
 
 import (
 	"errors"
+	"sdb/db"
 	"sdb/statements"
 	"sdb/utils"
 )
 
-func ParseDeleteStatement(input string) (statements.Executable, error) {
+func ParseDeleteStatement(input string) (db.Executable, error) {
 	trimmed, ok := utils.HasPrefix(input, "delete from")
 	if !ok {
 		return nil, nil
