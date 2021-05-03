@@ -28,7 +28,7 @@ func main() {
 	var err error
 	for {
 		input = ""
-		for !strings.HasSuffix(strings.TrimSpace(input), ";") {
+		for !strings.Contains(strings.TrimSpace(input), ";") {
 			fmt.Print("> ")
 			input, err = reader.ReadString('\n')
 			inputBuilder.WriteString(input)
@@ -42,7 +42,10 @@ func main() {
 				break
 			}
 
-			if strings.HasPrefix(strings.ToLower(strings.TrimSpace(input)), ".exit") {
+			if strings.HasPrefix(
+				strings.ToLower(strings.TrimSpace(input)),
+				".exit",
+			) {
 				fmt.Println("\nGoodbye!")
 				os.Exit(0)
 			}

@@ -16,8 +16,10 @@ func ParseInsertStatement(input string) (statements.Executable, error) {
 	tableName := utils.ParseIdentifier(trimmed)
 	trimmed, _ = utils.HasPrefix(trimmed, tableName)
 
-	trimmed, ok = utils.HasPrefix(trimmed, "values(")
+	trimmed, _ = utils.HasPrefix(trimmed, "values")
+	trimmed, ok = utils.HasPrefix(trimmed, "(")
 	if !ok {
+		fmt.Println(trimmed)
 		return nil, fmt.Errorf("Expected 'values' after table to insert into")
 	}
 

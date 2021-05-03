@@ -19,7 +19,16 @@ var VariableWidthTypes = []string{"char", "varchar"}
 // The DBState as of right now just tracks the current database that the user is
 // using, as specified in the `USE <db>;` query.
 type DBState struct {
-	CurrentDB string
+	CurrentDB   string
+	Transaction *Transaction
+}
+
+type Transaction struct {
+	LockFiles []string
+}
+
+func (state DBState) BeginTransaction() {
+	state.Transaction = &Transaction{}
 }
 
 // Create a new DBState with no current database. Will not be valid - user must

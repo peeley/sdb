@@ -6,9 +6,9 @@ import (
 )
 
 func ParseBeginTransaction(input string) (statements.Executable, error) {
-	trimmed, ok := utils.HasPrefix(input, "begin transaction")
+	_, ok := utils.HasPrefix(input, "begin transaction")
 
-	if ok && trimmed == "" {
+	if ok {
 		return statements.BeginTransaction{}, nil
 	} else {
 		return nil, nil
@@ -16,9 +16,9 @@ func ParseBeginTransaction(input string) (statements.Executable, error) {
 }
 
 func ParseCommit(input string) (statements.Executable, error) {
-	trimmed, ok := utils.HasPrefix(input, "commit")
+	_, ok := utils.HasPrefix(input, "commit")
 
-	if ok && trimmed == "" {
+	if ok {
 		return statements.Commit{}, nil
 	} else {
 		return nil, nil
