@@ -16,39 +16,6 @@ import (
 var ConstWidthTypes = []string{"float", "int"}
 var VariableWidthTypes = []string{"char", "varchar"}
 
-// The DBState as of right now just tracks the current database that the user is
-// using, as specified in the `USE <db>;` query.
-type DBState struct {
-	CurrentDB   string
-	Transaction *Transaction
-}
-
-// All SQL statement types implement this interface. The `Execute` function
-// contains the core logic of the query, which is executed in the REPL at the
-// `sdb/main.go` main function. See each statement's respective file in
-// `sdb/statements/<statement>.go`.
-type Executable interface {
-	Execute(*DBState) error
-}
-
-type Transaction struct {
-	LockFiles  []string
-	Statements []Executable
-}
-
-func (state *DBState) BeginTransaction() {
-	state.Transaction = &Transaction{}
-}
-
-// Create a new DBState with no current database. Will not be valid - user must
-// execute a `USE` query before actually executing any queries other than
-// `CREATE DATABASE`.
-func NewState() DBState {
-	return DBState{
-		CurrentDB: "",
-	}
-}
-
 // Converts an arbitrary string to a `Type` interface, with the appropriate type
 // parameters.
 func NewType(typename string, size int) Type {
@@ -123,8 +90,6 @@ func (v *Value) ToString() string {
 	return fmt.Sprintf("'%v'", v.Value)
 }
 
-// TODO Will also be used for type checking when DB implements insert/select
-// functionality.
 type Type interface {
 	ToString() string
 }

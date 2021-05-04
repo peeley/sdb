@@ -19,7 +19,6 @@ func ParseInsertStatement(input string) (db.Executable, error) {
 	trimmed, _ = utils.HasPrefix(trimmed, "values")
 	trimmed, ok = utils.HasPrefix(trimmed, "(")
 	if !ok {
-		fmt.Println(trimmed)
 		return nil, fmt.Errorf("Expected 'values' after table to insert into")
 	}
 

@@ -22,9 +22,9 @@ type UpdateStatement struct {
 }
 
 func (statement UpdateStatement) Execute(state *db.DBState) error {
-	fmt.Println(state.Transaction)
-	if state.Transaction != nil {
-		lockFileName, err := createTableLock(state.CurrentDB, statement.TableName)
+	if state.IsTransacting() {
+		// this process is transacting, add this statement to transaction
+		lockFileName, err := state.AcquireTableLock(statement.TableName)
 		if err != nil {
 			return err
 		}
@@ -38,6 +38,10 @@ func (statement UpdateStatement) Execute(state *db.DBState) error {
 			statement,
 		)
 
+		return nil
+	} else if state.TableLockExists(statement.TableName) {
+		// another process' transaction has locked the table, can't do anything
+		fmt.Printf("!Table %v is locked.\n", statement.TableName)
 		return nil
 	}
 
