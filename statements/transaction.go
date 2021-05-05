@@ -36,10 +36,6 @@ func (statement Commit) Execute(state *db.DBState) error {
 	lockFileNames := state.Transaction.LockFiles
 	state.Transaction = nil
 
-	for _, statement := range statements {
-		statement.Execute(state)
-	}
-
 	for _, lockFileName := range lockFileNames {
 		err := os.Remove(lockFileName)
 		if err != nil {
@@ -48,6 +44,10 @@ func (statement Commit) Execute(state *db.DBState) error {
 				lockFileName,
 			)
 		}
+	}
+
+	for _, statement := range statements {
+		statement.Execute(state)
 	}
 
 	fmt.Printf("Transaction committed.\n")

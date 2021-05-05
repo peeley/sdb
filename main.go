@@ -37,7 +37,7 @@ func main() {
 				break
 			}
 
-			fmt.Printf("%v\n", strings.TrimSpace(input))
+			fmt.Printf("\n")
 			if strings.HasPrefix(input, "--") {
 				break
 			}

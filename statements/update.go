@@ -38,6 +38,8 @@ func (statement UpdateStatement) Execute(state *db.DBState) error {
 			statement,
 		)
 
+		fmt.Println("Added update to transaction.")
+
 		return nil
 	} else if state.TableLockExists(statement.TableName) {
 		// another process' transaction has locked the table, can't do anything
